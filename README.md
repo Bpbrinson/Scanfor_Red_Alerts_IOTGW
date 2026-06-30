@@ -25,6 +25,58 @@ API runs at `http://localhost:9000`. Interactive docs at `http://localhost:9000/
 open http://localhost:9000
 ```
 
+---
+
+## Phase 3 — SQLite Database Layer
+
+Phase 3 adds a local SQLite database so the backend API reads and writes real data instead of relying only on mock data files.
+
+### Database
+
+- Database engine: SQLite
+- Database file: `backend/database/scanfor_red.db`
+- Database models: `backend/database/models.py`
+- Initialization script: `backend/database/init_db.py`
+- Seed data: `backend/database/seed_data.py`
+
+### Initialize / reset the database
+
+From the project root:
+
+```bash
+python3 -m backend.database.init_db
+```
+
+To reset and reseed data:
+
+```bash
+python3 -m backend.database.init_db --reset
+```
+
+### What is now database-backed
+
+- `GET /api/summary` → reads alert batches and alert events from SQLite
+- `GET /api/alert-batches/latest` → reads latest batch metadata from SQLite
+- `GET /api/alerts` → reads alert events from SQLite
+- `GET /api/known-issues` → reads known issue records from SQLite
+- `POST /api/known-issues` → creates a new known issue in SQLite
+- `PUT /api/known-issues/{known_issue_id}` → updates a known issue in SQLite
+- `PATCH /api/known-issues/{known_issue_id}/archive` → archives a known issue in SQLite
+- `POST /api/alerts/{alert_id}/notes` → adds a note to an alert event in SQLite
+- `PATCH /api/alerts/{alert_id}/status` → updates alert status/category in SQLite
+- `POST /api/alerts/{alert_id}/mark-known` → links an alert to a known issue or creates one, then updates the alert
+
+### What is intentionally not built yet
+
+- Gmail / Outlook email ingestion
+- Real email parsing
+- Ticket integration (Jira / Labtrack / similar)
+- Notifications
+- Authentication
+- Production secrets or real customer data
+
+---
+
 The backend serves the frontend directly, so there are no CORS issues.
 `/api/*` routes are handled by FastAPI; everything else serves the static frontend files.
 

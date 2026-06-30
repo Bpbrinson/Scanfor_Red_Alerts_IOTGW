@@ -234,15 +234,18 @@ def seed(db: Session) -> None:
     for res in SEED_RESOLVED_ALERTS:
         prior_batch = db.query(AlertBatch).filter_by(batch_id=res["batch_id"]).first()
         if not prior_batch:
+            batch_stamp = res["batch_id"].replace("ALERT-", "")
+            date_part = f"{batch_stamp[0:4]}-{batch_stamp[4:6]}-{batch_stamp[6:8]}"
+            time_part = f"{batch_stamp[9:11]}:{batch_stamp[11:13]}"
             db.add(AlertBatch(
                 batch_id=res["batch_id"],
                 source="IoTGW",
                 environment="Production",
                 email_subject="[Scanfor Red] Prior Batch",
                 sender="scanfor-red@internal.company.com",
-                received_time=res["batch_id"].replace("ALERT-", "").replace("-", "T", 1)[:16] + ":00",
+                received_time=f"{date_part}T{time_part}:00",
                 received_time_display="Prior batch",
-                processed_at=res["batch_id"].replace("ALERT-", "")[:10] + "T00:00:00",
+                processed_at=f"{date_part}T{time_part}:00",
                 total_issues_detected=0,
             ))
     db.flush()
