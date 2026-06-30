@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Scanfor Red — Alert Triage Dashboard</title>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+
+<div class="app-shell">
+
+  <!-- ─── App Header / Nav ──────────────────────────────────────────────── -->
+  <header class="app-header">
+    <div class="app-logo">
+      <div class="logo-dot"></div>
+      <span class="app-title-text"><span>Scanfor</span> Red</span>
+    </div>
+
+    <nav class="nav-tabs">
+      <button class="nav-tab active" id="tab-dashboard" onclick="switchView('dashboard')">
+        Alert Triage Dashboard
+      </button>
+      <button class="nav-tab" id="tab-known-issues" onclick="switchView('known-issues')">
+        Known Issues
+      </button>
+    </nav>
+
+    <div class="header-spacer"></div>
+    <div class="header-meta">Production &nbsp;·&nbsp; IoTGW &nbsp;·&nbsp; Jun 30, 2026</div>
+  </header>
+
+  <!-- ─── Main Content ──────────────────────────────────────────────────── -->
+  <main class="main-content">
+
+    <!-- API status banner (hidden by default) -->
+    <div id="api-banner" style="display:none"></div>
+
+    <!-- ══════════════════════════════════════════════════════════════════
+         VIEW: Dashboard
+         ══════════════════════════════════════════════════════════════════ -->
+    <div id="view-dashboard">
+
+      <!-- Batch Header -->
+      <div id="batch-header"></div>
+
+      <!-- Summary Cards -->
+      <div id="summary-cards"></div>
+
+      <!-- Filter Bar -->
+      <div id="filter-bar"></div>
+
+      <!-- Section: New / Unknown Issues -->
+      <div class="section-panel section-new" id="section-new">
+        <div class="section-header">
+          <span class="section-icon">🔴</span>
+          <span class="section-title">New / Unknown Issues</span>
+          <span class="section-count count-new" id="count-new"></span>
+          <span class="section-desc">No matching known-issue fingerprint — requires investigation</span>
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Status</th>
+                <th>Hostname</th>
+                <th>Log File</th>
+                <th>Error Type</th>
+                <th>Count</th>
+                <th>Growth</th>
+                <th>First Seen</th>
+                <th>Last Seen</th>
+                <th>Suggested Action</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-new"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Section: Known Issues -->
+      <div class="section-panel section-known" id="section-known">
+        <div class="section-header">
+          <span class="section-icon">🔵</span>
+          <span class="section-title">Known Issues</span>
+          <span class="section-count count-known" id="count-known"></span>
+          <span class="section-desc">Matched a known-issue record — monitor per runbook</span>
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Status</th>
+                <th>Hostname</th>
+                <th>Log File</th>
+                <th>Error Type</th>
+                <th>Count</th>
+                <th>Growth</th>
+                <th>Known Issue ID</th>
+                <th>Owner</th>
+                <th>Runbook</th>
+                <th>Ticket</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-known"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Section: Known but Worsening -->
+      <div class="section-panel section-worsening" id="section-worsening">
+        <div class="section-header">
+          <span class="section-icon">🟠</span>
+          <span class="section-title">Known but Worsening</span>
+          <span class="section-count count-worsening" id="count-worsening"></span>
+          <span class="section-desc">Matched known issue, but count or growth exceeds normal threshold</span>
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Status</th>
+                <th>Hostname</th>
+                <th>Log File</th>
+                <th>Error Type</th>
+                <th>Normal Range</th>
+                <th>Current Count</th>
+                <th>Growth</th>
+                <th>Severity</th>
+                <th>Escalation Rule</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-worsening"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Section: Resolved / No Longer Seen -->
+      <div class="section-panel section-resolved" id="section-resolved">
+        <div class="section-header">
+          <span class="section-icon">🟢</span>
+          <span class="section-title">Resolved / No Longer Seen</span>
+          <span class="section-count count-resolved" id="count-resolved"></span>
+          <span class="section-desc">Previously active — absent from the current alert batch</span>
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Status</th>
+                <th>Error Type</th>
+                <th>Hostname</th>
+                <th>Log File</th>
+                <th>Previous Count</th>
+                <th>Last Seen</th>
+                <th>Resolution Notes</th>
+                <th>Known Issue</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-resolved"></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div><!-- /view-dashboard -->
+
+
+    <!-- ══════════════════════════════════════════════════════════════════
+         VIEW: Known Issues Catalog
+         ══════════════════════════════════════════════════════════════════ -->
+    <div id="view-known-issues" style="display:none">
+
+      <div class="view-header">
+        <div class="view-title">Known Issues Catalog</div>
+        <div class="view-sub">
+          Documented recurring issues used for fingerprint-matching and classification.
+          Add or edit entries here to improve automated triage accuracy.
+        </div>
+      </div>
+
+      <!-- Toolbar / Filters -->
+      <div id="ki-toolbar"></div>
+
+      <!-- Known Issues Table -->
+      <div class="section-panel">
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Fingerprint</th>
+                <th>Error Type</th>
+                <th>Host Scope</th>
+                <th>Log Scope</th>
+                <th>Severity</th>
+                <th>Owner</th>
+                <th>Status</th>
+                <th>Normal Count Range</th>
+                <th>Cause</th>
+                <th>Last Reviewed</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-ki"></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div><!-- /view-known-issues -->
+
+  </main>
+</div><!-- /app-shell -->
+
+
+<!-- ─── Loading overlay ───────────────────────────────────────────────────── -->
+<div id="loading-overlay">
+  <div class="loading-box">
+    <div class="loading-spinner"></div>
+    <div class="loading-text">Loading alert data…</div>
+  </div>
+</div>
+
+
+<!-- ─── Known Issue Detail Modal ──────────────────────────────────────────── -->
+<div id="modal-overlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Known Issue Detail</span>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div id="modal-body"></div>
+  </div>
+</div>
+
+
+<!-- ─── Toast ─────────────────────────────────────────────────────────────── -->
+<div id="toast"></div>
+
+
+<!--
+  Script load order matters:
+    1. Mock data (fallback source when API is unreachable)
+    2. Utilities (fingerprint)
+    3. Data layer (STORE + api.js)
+    4. Render components (dashboard, knownIssues)
+    5. App entry point (routing + async data load)
+-->
+<script src="js/mockAlerts.js"></script>
+<script src="js/mockKnownIssues.js"></script>
+<script src="js/fingerprint.js"></script>
+<script src="js/dataStore.js"></script>
+<script src="js/api.js"></script>
+<script src="js/dashboard.js"></script>
+<script src="js/knownIssues.js"></script>
+<script src="js/app.js"></script>
+
+</body>
+</html>
