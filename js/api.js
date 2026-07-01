@@ -99,6 +99,21 @@ async function getAlerts() {
   return data.map(_transformAlert);
 }
 
+async function getPromStatus() {
+  const res = await fetch(`${API_BASE}/prom/status`);
+  if (!res.ok) throw new Error(`/api/prom/status returned ${res.status}`);
+  return res.json();
+}
+
+async function processPromFile() {
+  const res = await fetch(`${API_BASE}/prom/process`, { method: "POST" });
+  if (!res.ok) {
+    const error = await res.json().catch(() => null);
+    throw new Error(error?.detail || `/api/prom/process returned ${res.status}`);
+  }
+  return res.json();
+}
+
 async function getKnownIssues() {
   const res = await fetch(`${API_BASE}/known-issues`);
   if (!res.ok) throw new Error(`/api/known-issues returned ${res.status}`);

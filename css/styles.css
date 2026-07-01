@@ -261,12 +261,48 @@ a:hover { text-decoration: underline; }
 .card-time-val { font-size: 22px; }
 
 /* ─── Filter Bar ────────────────────────────────────────────────────────────── */
-#filter-bar, #ki-toolbar {
+#filter-bar, #ki-toolbar, .prom-status-container {
   background: var(--bg-panel);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   padding: 12px 16px;
   margin-bottom: 20px;
+}
+
+.prom-status-card {
+  display: grid;
+  gap: 10px;
+}
+
+.prom-status-card .prom-status-row {
+  display: grid;
+  grid-template-columns: 1.2fr 1.8fr;
+  gap: 10px;
+  font-size: 13px;
+}
+
+.prom-status-card .prom-status-row div {
+  overflow-wrap: anywhere;
+}
+
+.prom-status-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+
+.prom-status-card .prom-status-label {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+}
+
+.prom-status-card .prom-status-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
 }
 
 .filter-row {

@@ -48,6 +48,8 @@ class AlertEvent(Base):
     first_seen = Column(String)
     last_seen = Column(String)
     fingerprint = Column(String)
+    fingerprint_exact = Column(String, nullable=True)
+    fingerprint_general = Column(String, nullable=True)
     classification_reason = Column(Text)
     suggested_action = Column(Text, nullable=True)
     known_issue_id = Column(String, nullable=True)
@@ -57,6 +59,16 @@ class AlertEvent(Base):
     notes = Column(Text, nullable=True)
     normal_range = Column(String, nullable=True)
     escalation_rule = Column(String, nullable=True)
+    system_type = Column(String, nullable=True)
+    system = Column(String, nullable=True)
+    tenant = Column(String, nullable=True)
+    error_index = Column(String, nullable=True)
+    color = Column(String, nullable=True)
+    raw_known_error = Column(String, nullable=True)
+    raw_note = Column(String, nullable=True)
+    caused_by = Column(String, nullable=True)
+    previous_count = Column(Integer, default=0)
+    snapshot_id = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -102,6 +114,26 @@ class AlertNote(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     event = relationship("AlertEvent", back_populates="alert_notes")
+
+
+class PromSnapshot(Base):
+    __tablename__ = "prom_snapshots"
+
+    id = Column(Integer, primary_key=True, index=True)
+    snapshot_id = Column(String, unique=True, index=True, nullable=False)
+    batch_id = Column(String, ForeignKey("alert_batches.batch_id"), nullable=False)
+    file_path = Column(String)
+    file_hash = Column(String)
+    file_modified_time = Column(String)
+    processed_at = Column(String)
+    total_lines = Column(Integer, default=0)
+    total_metrics = Column(Integer, default=0)
+    status = Column(String)
+    error_message = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    batch = relationship("AlertBatch")
 
 
 class IssueStatusHistory(Base):

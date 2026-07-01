@@ -14,7 +14,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from backend.routes import health, summary, alerts, known_issues
+from backend.routes import health, summary, alerts, known_issues, alert_batches, prom
+from backend.services.prom_watcher import start_prom_watcher, stop_prom_watcher
 
 app = FastAPI(
     title="Scanfor Red API",
@@ -35,7 +36,19 @@ app.add_middleware(
 app.include_router(health.router, prefix="/api")
 app.include_router(summary.router, prefix="/api")
 app.include_router(alerts.router, prefix="/api")
+app.include_router(alert_batches.router, prefix="/api")
 app.include_router(known_issues.router, prefix="/api")
+app.include_router(prom.router, prefix="/api")
+
+
+@app.on_event("startup")
+async def startup_event():
+    await start_prom_watcher()
+
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    await stop_prom_watcher()
 
 # Serve the frontend from the project root at http://localhost:9000
 # API routes registered above take priority; everything else falls through to

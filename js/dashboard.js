@@ -20,6 +20,7 @@ const expandedRows = new Set();
 // ─── Entry Point ──────────────────────────────────────────────────────────────
 function renderDashboard() {
   renderBatchHeader();
+  renderPromStatusCard();
   renderSummaryCards();
   renderFilterBar();
   renderAllSections();
@@ -46,6 +47,7 @@ function renderBatchHeader() {
         <button class="btn btn-secondary" onclick="showToast('Export triggered (placeholder)')">&#8595; Export Report</button>
       </div>
     </div>
+    <div id="prom-status-card" class="prom-status-container"></div>
   `;
 }
 

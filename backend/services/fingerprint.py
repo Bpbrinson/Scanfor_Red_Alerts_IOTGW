@@ -44,3 +44,37 @@ def build_fingerprint(hostname: str, log_file: str, error_type: str) -> str:
     host_prefix = extract_host_prefix(hostname)
     log_scope = extract_log_scope(log_file)
     return f"{env} | {host_prefix} | {log_scope} | {error_type}"
+
+
+def build_fingerprint_exact(
+    tenant: str,
+    system: str,
+    hostname: str,
+    log_file: str,
+    error_type: str,
+    error_index: str,
+    caused_by: str,
+) -> str:
+    host_prefix = extract_host_prefix(hostname)
+    log_scope = extract_log_scope(log_file)
+    parts = [tenant, system, host_prefix, log_scope, error_type, error_index]
+    if caused_by:
+        parts.append(caused_by)
+    return " | ".join(str(p) for p in parts if p is not None)
+
+
+def build_fingerprint_general(
+    tenant: str,
+    system: str,
+    hostname: str,
+    log_file: str,
+    error_type: str,
+    error_index: str,
+    caused_by: str,
+) -> str:
+    host_prefix = extract_host_prefix(hostname)
+    log_scope = extract_log_scope(log_file)
+    parts = [tenant, system, host_prefix, log_scope, error_type, error_index]
+    if caused_by:
+        parts.append(caused_by)
+    return " | ".join(str(p) for p in parts if p is not None)

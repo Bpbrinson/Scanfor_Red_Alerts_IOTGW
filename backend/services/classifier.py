@@ -16,7 +16,7 @@ from __future__ import annotations
 from typing import Optional, List, Any
 import re
 
-from backend.services.fingerprint import extract_host_prefix, extract_log_scope
+from backend.services.fingerprint import extract_env, extract_host_prefix, extract_log_scope, build_fingerprint
 
 
 def _get(obj: Any, key: str):
@@ -48,13 +48,44 @@ def _error_matches(error_type: str, ki_error_type: str) -> bool:
         return error_type == ki_error_type
 
 
+def _pattern_matches(value: str, pattern: str) -> bool:
+    if pattern == "":
+        return True
+    if pattern == value:
+        return True
+    if pattern.startswith("*") or pattern.endswith("*"):
+        regex = "^" + re.escape(pattern).replace("\\*", ".*") + "$"
+        return bool(re.match(regex, value, re.I))
+    return False
+
+
+def _fingerprint_matches(alert_fingerprint: str, fingerprint_pattern: str) -> bool:
+    alert_parts = [part.strip() for part in alert_fingerprint.split("|")]
+    pattern_parts = [part.strip() for part in fingerprint_pattern.split("|")]
+    if len(alert_parts) != len(pattern_parts):
+        return False
+    return all(_pattern_matches(alert_part, pattern_part) for alert_part, pattern_part in zip(alert_parts, pattern_parts))
+
+
 def find_matching_known_issue(
     hostname: str,
     log_file: str,
     error_type: str,
     known_issues: List[Any],
 ) -> Optional[Any]:
-    """Return the first known issue that matches all three dimensions, or None."""
+    """Return the first known issue that matches by fingerprint or scope."""
+    alert_fingerprint = build_fingerprint(hostname, log_file, error_type)
+
+    for ki in known_issues:
+        if ki is None:
+            continue
+        if _get(ki, "status") == "archived":
+            continue
+
+        fingerprint_pattern = _get(ki, "fingerprint") or ""
+        if fingerprint_pattern and _fingerprint_matches(alert_fingerprint, fingerprint_pattern):
+            return ki
+
     for ki in known_issues:
         if ki is None:
             continue
@@ -66,6 +97,7 @@ def find_matching_known_issue(
             and _log_matches_scope(log_file, _get(ki, "log_scope") or "")
         ):
             return ki
+
     return None
 
 

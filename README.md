@@ -91,6 +91,10 @@ The backend serves the frontend directly, so there are no CORS issues.
 | GET | `/api/alert-batches/latest` | Latest batch metadata |
 | GET | `/api/alerts` | All classified alert events |
 | GET | `/api/known-issues` | Known issue catalog |
+| GET | `/api/prom/status` | Current Prometheus file status |
+| POST | `/api/prom/process` | Process the configured `.prom` file immediately |
+| GET | `/api/prom/snapshots` | List recorded Prometheus snapshots |
+| GET | `/api/prom/snapshots/latest` | Latest Prometheus snapshot |
 
 ---
 

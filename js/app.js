@@ -53,14 +53,16 @@ async function loadData() {
   setApiBanner(null, null);
 
   try {
-    // Fetch in parallel — all three are needed before first render
-    const [batch, alerts, knownIssues] = await Promise.all([
+    // Fetch in parallel — all the dashboard data plus prom status.
+    const [batch, alerts, knownIssues, promStatus] = await Promise.all([
       getLatestBatch(),
       getAlerts(),
       getKnownIssues(),
+      getPromStatus(),
     ]);
 
     populateStoreFromApi(batch, alerts, knownIssues);
+    populatePromStatus(promStatus);
     setApiBanner(null, null);
 
   } catch (err) {
@@ -85,6 +87,25 @@ async function loadData() {
 async function refreshData() {
   await loadData();
   showToast("Data refreshed.");
+}
+
+// ─── Prom processing ─────────────────────────────────────────────────────────
+async function processPromNow() {
+  setLoading(true);
+  setApiBanner(null, null);
+  try {
+    const result = await processPromFile();
+    if (result.status === "skipped") {
+      setApiBanner("info", "No new .prom changes detected.");
+    } else {
+      setApiBanner("success", "Prom file processed successfully.");
+    }
+  } catch (err) {
+    setApiBanner("error", `Unable to process .prom file. ${err.message}`);
+  } finally {
+    await loadData();
+    setLoading(false);
+  }
 }
 
 // ─── Init ─────────────────────────────────────────────────────────────────────

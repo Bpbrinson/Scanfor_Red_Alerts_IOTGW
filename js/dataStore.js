@@ -22,7 +22,15 @@ const STORE = {
   knownIssuesCatalog:  [],
   loaded:              false,
   usingFallback:       false,
+  promStatus:         null,
 };
+
+/**
+ * Store Prometheus .prom status information.
+ */
+function populatePromStatus(promStatus) {
+  STORE.promStatus = promStatus;
+}
 
 /**
  * Populate STORE from API-fetched data (already transformed to camelCase).
@@ -60,6 +68,7 @@ function populateStoreFromMock() {
   STORE.resolvedAlerts     = resA;
   STORE.allAlerts          = [...newA, ...knA, ...wsA, ...resA];
   STORE.knownIssuesCatalog = KNOWN_ISSUES;
+  STORE.promStatus         = null;
   STORE.loaded             = true;
   STORE.usingFallback      = true;
 }
