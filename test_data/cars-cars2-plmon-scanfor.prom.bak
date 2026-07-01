@@ -1,0 +1,8 @@
+# HELP scanfor_errors Total errors matching scanfor patterns
+# TYPE scanfor_errors gauge
+# Generated: 2026-07-01 08:57:37
+# State file: /tmp/scanfor_state_cars_cars2_2026-06-30.dat
+scanfor_errors{system_type="IotGW",system="cars",hostname="cars-cars2-plmon-scanfor",tenant="cars",filename="authlistener-main.20260630",error_type="ERROR_log",error_index="0",color="black",known_error="true",note="mock expired token retries",caused_by="TokenService.java:118"} 783
+scanfor_errors{system_type="IotGW",system="cars",hostname="cars-cars2-plmon-scanfor",tenant="cars",filename="authlistener-main.20260630",error_type="java_exception",error_index="2",color="yellow",known_error="false",note="",caused_by="TokenService.java:118"} 1275
+scanfor_errors{system_type="IotGW",system="cars",hostname="cars-cars2-plmon-scanfor",tenant="cars",filename="authserver-main.20260630",error_type="javax_net_ssl",error_index="5",color="red",known_error="false",note=""} 3707
+scanfor_errors{system_type="IotGW",system="cars",hostname="cars-cars2-plmon-scanfor",tenant="cars",filename="authserver-main.20260630",error_type="SocketTimeoutException",error_index="8",color="yellow",known_error="false",note=""} 1001
