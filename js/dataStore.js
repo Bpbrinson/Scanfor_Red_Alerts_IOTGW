@@ -23,6 +23,7 @@ const STORE = {
   loaded:              false,
   usingFallback:       false,
   promStatus:         null,
+  promFiles:          null,
 };
 
 /**
@@ -32,16 +33,29 @@ function populatePromStatus(promStatus) {
   STORE.promStatus = promStatus;
 }
 
+function populatePromFiles(promFiles) {
+  STORE.promFiles = promFiles;
+}
+
 /**
  * Populate STORE from API-fetched data (already transformed to camelCase).
  */
 function populateStoreFromApi(batch, alerts, knownIssues) {
+  // Worsening requires actual growth. Anything the backend flagged as
+  // worsening with growth <= 0 is downgraded to known for display.
+  const normalized = alerts.map((a) => {
+    if (a.category === "worsening" && (Number(a.growth) || 0) <= 0) {
+      return { ...a, category: "known", status: "known" };
+    }
+    return a;
+  });
+
   STORE.batch              = batch;
-  STORE.allAlerts          = alerts;
-  STORE.newAlerts          = alerts.filter((a) => a.category === "new");
-  STORE.knownAlerts        = alerts.filter((a) => a.category === "known");
-  STORE.worseningAlerts    = alerts.filter((a) => a.category === "worsening");
-  STORE.resolvedAlerts     = alerts.filter((a) => a.category === "resolved");
+  STORE.allAlerts          = normalized;
+  STORE.newAlerts          = normalized.filter((a) => a.category === "new");
+  STORE.knownAlerts        = normalized.filter((a) => a.category === "known");
+  STORE.worseningAlerts    = normalized.filter((a) => a.category === "worsening");
+  STORE.resolvedAlerts     = normalized.filter((a) => a.category === "resolved");
   STORE.knownIssuesCatalog = knownIssues;
   STORE.loaded             = true;
   STORE.usingFallback      = false;
@@ -69,6 +83,7 @@ function populateStoreFromMock() {
   STORE.allAlerts          = [...newA, ...knA, ...wsA, ...resA];
   STORE.knownIssuesCatalog = KNOWN_ISSUES;
   STORE.promStatus         = null;
+  STORE.promFiles          = null;
   STORE.loaded             = true;
   STORE.usingFallback      = true;
 }

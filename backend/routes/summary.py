@@ -13,7 +13,7 @@ def get_summary(db: Session = Depends(get_db)):
     # Latest batch drives the active-alert counts
     latest_batch = (
         db.query(AlertBatch)
-        .order_by(AlertBatch.received_time.desc())
+        .order_by(AlertBatch.id.desc())
         .first()
     )
 

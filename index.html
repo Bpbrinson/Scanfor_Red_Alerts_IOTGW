@@ -27,7 +27,9 @@
     </nav>
 
     <div class="header-spacer"></div>
-    <div class="header-meta">Production &nbsp;·&nbsp; IoTGW &nbsp;·&nbsp; Jun 30, 2026</div>
+    <button id="theme-toggle" class="theme-toggle-btn" onclick="toggleTheme()">Light mode</button>
+    <button class="theme-toggle-btn" onclick="processPromNow()">Process .prom Folder Now</button>
+    <div class="header-meta" id="header-meta">Production &nbsp;·&nbsp; IoTGW</div>
   </header>
 
   <!-- ─── Main Content ──────────────────────────────────────────────────── -->
@@ -40,9 +42,6 @@
          VIEW: Dashboard
          ══════════════════════════════════════════════════════════════════ -->
     <div id="view-dashboard">
-
-      <!-- Batch Header -->
-      <div id="batch-header"></div>
 
       <!-- Summary Cards -->
       <div id="summary-cards"></div>
@@ -68,8 +67,6 @@
                 <th>Error Type</th>
                 <th>Count</th>
                 <th>Growth</th>
-                <th>First Seen</th>
-                <th>Last Seen</th>
                 <th>Suggested Action</th>
                 <th>Actions</th>
               </tr>
@@ -134,34 +131,6 @@
               </tr>
             </thead>
             <tbody id="tbody-worsening"></tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- Section: Resolved / No Longer Seen -->
-      <div class="section-panel section-resolved" id="section-resolved">
-        <div class="section-header">
-          <span class="section-icon">🟢</span>
-          <span class="section-title">Resolved / No Longer Seen</span>
-          <span class="section-count count-resolved" id="count-resolved"></span>
-          <span class="section-desc">Previously active — absent from the current alert batch</span>
-        </div>
-        <div class="table-scroll">
-          <table>
-            <thead>
-              <tr>
-                <th>Status</th>
-                <th>Error Type</th>
-                <th>Hostname</th>
-                <th>Log File</th>
-                <th>Previous Count</th>
-                <th>Last Seen</th>
-                <th>Resolution Notes</th>
-                <th>Known Issue</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody id="tbody-resolved"></tbody>
           </table>
         </div>
       </div>
@@ -249,15 +218,15 @@
     4. Render components (dashboard, knownIssues)
     5. App entry point (routing + async data load)
 -->
-<script src="js/mockAlerts.js"></script>
-<script src="js/mockKnownIssues.js"></script>
-<script src="js/fingerprint.js"></script>
-<script src="js/dataStore.js"></script>
-<script src="js/promStatus.js"></script>
-<script src="js/api.js"></script>
-<script src="js/dashboard.js"></script>
-<script src="js/knownIssues.js"></script>
-<script src="js/app.js"></script>
+<script src="js/mockAlerts.js?v=15"></script>
+<script src="js/mockKnownIssues.js?v=15"></script>
+<script src="js/fingerprint.js?v=15"></script>
+<script src="js/dataStore.js?v=15"></script>
+<script src="js/promStatus.js?v=15"></script>
+<script src="js/api.js?v=15"></script>
+<script src="js/dashboard.js?v=16"></script>
+<script src="js/knownIssues.js?v=15"></script>
+<script src="js/app.js?v=15"></script>
 
 </body>
 </html>

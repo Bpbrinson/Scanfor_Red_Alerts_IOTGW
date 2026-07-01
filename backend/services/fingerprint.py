@@ -55,9 +55,8 @@ def build_fingerprint_exact(
     error_index: str,
     caused_by: str,
 ) -> str:
-    host_prefix = extract_host_prefix(hostname)
     log_scope = extract_log_scope(log_file)
-    parts = [tenant, system, host_prefix, log_scope, error_type, error_index]
+    parts = [tenant, system, hostname, log_scope, error_type, error_index]
     if caused_by:
         parts.append(caused_by)
     return " | ".join(str(p) for p in parts if p is not None)

@@ -305,6 +305,48 @@ a:hover { text-decoration: underline; }
   color: var(--text-primary);
 }
 
+.prom-status-card .prom-status-error div:last-child {
+  color: #ff8080;
+}
+
+.prom-file-list {
+  margin-top: 10px;
+  max-height: 320px;
+  overflow: auto;
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+}
+
+.prom-file-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.prom-file-table th,
+.prom-file-table td {
+  text-align: left;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.prom-file-table th {
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 600;
+}
+
+.prom-file-table .text-right {
+  text-align: right;
+}
+
+.prom-file-empty {
+  padding: 12px;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
 .filter-row {
   display: flex;
   align-items: center;
@@ -792,4 +834,59 @@ thead th {
   .header-meta { display: none; }
   .batch-fields { gap: 12px; }
   .batch-actions { flex-wrap: wrap; }
+}
+
+/* ─── Theme toggle button ────────────────────────────────────────────────── */
+.theme-toggle-btn {
+  background: var(--bg-card);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.theme-toggle-btn:hover {
+  background: var(--bg-hover);
+}
+
+/* ─── Light mode overrides ───────────────────────────────────────────────── */
+body.light-mode {
+  --bg-base:      #f4f5f9;
+  --bg-surface:   #ffffff;
+  --bg-panel:     #ffffff;
+  --bg-card:      #f7f8fc;
+  --bg-hover:     #eceff6;
+  --bg-expand:    #f0f2f8;
+
+  --border:       #d5d9e2;
+  --border-light: #e2e5ec;
+
+  --text-primary:   #1e2333;
+  --text-secondary: #4a5170;
+  --text-muted:     #7a8098;
+
+  --red:        #d02222;
+  --red-dim:    #f4c2c2;
+  --orange:     #d8730a;
+  --orange-dim: #fadfba;
+  --yellow:     #b58800;
+  --green:      #158548;
+  --green-dim:  #bfe6ce;
+  --blue:       #2461c8;
+  --blue-dim:   #c6d6f0;
+  --purple:     #6f43d0;
+  --gray:       #98a0b8;
+
+  --status-new:       #d02222;
+  --status-known:     #2461c8;
+  --status-worsening: #d8730a;
+  --status-resolved:  #158548;
+}
+
+body.light-mode .prom-status-card .prom-status-error div:last-child {
+  color: #c02020;
 }

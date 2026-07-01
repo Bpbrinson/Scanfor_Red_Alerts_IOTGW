@@ -34,7 +34,7 @@ def _ki_to_dict(ki: KnownIssue) -> dict:
 
 
 def _generate_known_issue_id(db: Session) -> str:
-    all_ids = db.query(KnownIssue.known_issue_id).scalars().all()
+    all_ids = [row[0] for row in db.query(KnownIssue.known_issue_id).all()]
     max_value = 0
     for value in all_ids:
         try:

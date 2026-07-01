@@ -53,16 +53,18 @@ async function loadData() {
   setApiBanner(null, null);
 
   try {
-    // Fetch in parallel — all the dashboard data plus prom status.
-    const [batch, alerts, knownIssues, promStatus] = await Promise.all([
+    // Fetch in parallel — all the dashboard data plus prom status + inventory.
+    const [batch, alerts, knownIssues, promStatus, promFiles] = await Promise.all([
       getLatestBatch(),
       getAlerts(),
       getKnownIssues(),
       getPromStatus(),
+      getPromFiles().catch(() => null),
     ]);
 
     populateStoreFromApi(batch, alerts, knownIssues);
     populatePromStatus(promStatus);
+    populatePromFiles(promFiles);
     setApiBanner(null, null);
 
   } catch (err) {
@@ -96,12 +98,15 @@ async function processPromNow() {
   try {
     const result = await processPromFile();
     if (result.status === "skipped") {
-      setApiBanner("info", "No new .prom changes detected.");
+      setApiBanner("info", "No new .prom folder changes detected.");
     } else {
-      setApiBanner("success", "Prom file processed successfully.");
+      setApiBanner(
+        "success",
+        `Processed ${result.total_files ?? 0} .prom file(s) — ${result.created_alert_events ?? 0} alerts, ${result.resolved_alert_events ?? 0} resolved.`,
+      );
     }
   } catch (err) {
-    setApiBanner("error", `Unable to process .prom file. ${err.message}`);
+    setApiBanner("error", `Unable to process .prom folder. ${err.message}`);
   } finally {
     await loadData();
     setLoading(false);
@@ -110,5 +115,6 @@ async function processPromNow() {
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
 document.addEventListener("DOMContentLoaded", () => {
+  initTheme();
   loadData();
 });

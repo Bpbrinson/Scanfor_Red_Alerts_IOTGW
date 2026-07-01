@@ -17,13 +17,209 @@ let dashFilters = {
 // Track which rows are expanded
 const expandedRows = new Set();
 
+// ─── Mark Known handler ───────────────────────────────────────────────────────
+async function markKnownFromRow(alertId) {
+  const alert = STORE.allAlerts.find((x) => x.id === alertId);
+  if (!alert) {
+    showToast("Alert not found.");
+    return;
+  }
+
+  const payload = {
+    changed_by: "user",
+    new_known_issue: {
+      fingerprint: alert.fingerprint,
+      error_type: alert.errorType,
+      host_scope: alert.hostname,
+      log_scope: alert.logFile,
+      severity: alert.severity || "medium",
+      owner: alert.owner || "",
+      normal_count_min: 0,
+      normal_count_max: Math.max(Number(alert.count) || 0, 100),
+      normal_growth_min: 0,
+      normal_growth_max: Math.max(Number(alert.growth) || 0, 50),
+      cause: "",
+      impact: "",
+      resolution_steps: alert.suggestedAction || "",
+      runbook_link: null,
+      ticket_link: null,
+      last_reviewed: new Date().toISOString().slice(0, 10),
+    },
+  };
+
+  setLoading(true);
+  try {
+    const updated = await markAlertKnown(alertId, payload);
+    showToast(`Marked known as ${updated.known_issue_id}.`);
+    await loadData();
+  } catch (err) {
+    console.error(err);
+    showToast(`Failed to mark known: ${err.message}`);
+  } finally {
+    setLoading(false);
+  }
+}
+
+// ─── Ticket linker ────────────────────────────────────────────────────────────
+async function linkTicketToRow(alertId) {
+  const alert = STORE.allAlerts.find((x) => x.id === alertId);
+  if (!alert) {
+    showToast("Alert not found.");
+    return;
+  }
+
+  const current = alert.ticketLink || "";
+  const input = prompt("Ticket number or link (leave blank to clear):", current);
+  if (input === null) return;
+  const value = input.trim();
+
+  setLoading(true);
+  try {
+    await updateAlertTicket(alertId, value || null);
+    showToast(value ? `Ticket ${value} linked.` : "Ticket cleared.");
+    await loadData();
+  } catch (err) {
+    console.error(err);
+    showToast(`Failed to update ticket: ${err.message}`);
+  } finally {
+    setLoading(false);
+  }
+}
+
+// ─── Unmark Known handler ─────────────────────────────────────────────────────
+async function unmarkKnownFromRow(alertId) {
+  const alert = STORE.allAlerts.find((x) => x.id === alertId);
+  if (!alert) {
+    showToast("Alert not found.");
+    return;
+  }
+
+  const msg =
+    `Move "${alert.errorType}" on ${alert.hostname} back to New / Unknown?\n\n` +
+    `This clears its link to ${alert.knownIssueId || "the known issue"}.`;
+  if (!confirm(msg)) return;
+
+  setLoading(true);
+  try {
+    await updateAlertStatus(alertId, {
+      status: "new",
+      category: "new",
+      changed_by: "user",
+      change_reason: "Unmarked from known — returned to New / Unknown",
+      clear_known_issue: true,
+    });
+    showToast("Alert moved back to New / Unknown.");
+    await loadData();
+  } catch (err) {
+    console.error(err);
+    showToast(`Failed to unmark: ${err.message}`);
+  } finally {
+    setLoading(false);
+  }
+}
+
+// ─── Reopen handler ───────────────────────────────────────────────────────────
+async function reopenAlert(alertId) {
+  const alert = STORE.allAlerts.find((x) => x.id === alertId);
+  if (!alert) {
+    showToast("Alert not found.");
+    return;
+  }
+
+  const msg = `Reopen "${alert.errorType}" on ${alert.hostname}?\n\nIt will move back to New / Unknown.`;
+  if (!confirm(msg)) return;
+
+  setLoading(true);
+  try {
+    await updateAlertStatus(alertId, {
+      status: "new",
+      category: "new",
+      changed_by: "user",
+      change_reason: "Reopened from Resolved section",
+    });
+    showToast("Alert reopened.");
+    await loadData();
+  } catch (err) {
+    console.error(err);
+    showToast(`Failed to reopen: ${err.message}`);
+  } finally {
+    setLoading(false);
+  }
+}
+
+// ─── Save Note ────────────────────────────────────────────────────────────────
+async function saveNoteFromRow(alertId) {
+  const textarea = document.getElementById(`notes-${alertId}`);
+  if (!textarea) {
+    showToast("Note field not found.");
+    return;
+  }
+  const value = textarea.value;
+
+  try {
+    await saveAlertNote(alertId, value);
+    // Keep the row expanded — update STORE in place so future renders show the value.
+    const alert = STORE.allAlerts.find((x) => x.id === alertId);
+    if (alert) alert.notes = value;
+    for (const bucket of [STORE.newAlerts, STORE.knownAlerts, STORE.worseningAlerts, STORE.resolvedAlerts]) {
+      const hit = bucket.find((x) => x.id === alertId);
+      if (hit) hit.notes = value;
+    }
+    showToast("Note saved.");
+  } catch (err) {
+    console.error(err);
+    showToast(`Failed to save note: ${err.message}`);
+  }
+}
+
+// ─── Ticket cell renderer ─────────────────────────────────────────────────────
+function renderTicketField(a) {
+  if (a.ticketLink) {
+    return `<a href="${a.ticketLink}" class="link" onclick="linkTicketToRow('${a.id}');return false;">${a.ticketLink.replace("#ticket-", "")}</a>`;
+  }
+  return `<a href="#" class="link text-muted" onclick="linkTicketToRow('${a.id}');return false;">Add ticket</a>`;
+}
+
+// ─── Theme toggle ─────────────────────────────────────────────────────────────
+function initTheme() {
+  const saved = localStorage.getItem("scanfor-theme") || "dark";
+  document.body.classList.toggle("light-mode", saved === "light");
+  updateThemeButton(saved);
+}
+
+function toggleTheme() {
+  const isLight = document.body.classList.toggle("light-mode");
+  const theme = isLight ? "light" : "dark";
+  localStorage.setItem("scanfor-theme", theme);
+  updateThemeButton(theme);
+}
+
+function updateThemeButton(theme) {
+  const btn = document.getElementById("theme-toggle");
+  if (btn) btn.textContent = theme === "light" ? "Dark mode" : "Light mode";
+}
+
 // ─── Entry Point ──────────────────────────────────────────────────────────────
 function renderDashboard() {
-  renderBatchHeader();
-  renderPromStatusCard();
+  renderHeaderMeta();
   renderSummaryCards();
   renderFilterBar();
   renderAllSections();
+}
+
+// ─── Header date ──────────────────────────────────────────────────────────────
+function renderHeaderMeta() {
+  const el = document.getElementById("header-meta");
+  if (!el) return;
+  const now = new Date();
+  const dateStr = now.toLocaleDateString(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+  const env = STORE.batch?.environment || "Production";
+  const source = STORE.batch?.source || "IoTGW";
+  el.innerHTML = `${env} &nbsp;·&nbsp; ${source} &nbsp;·&nbsp; ${dateStr}`;
 }
 
 // ─── Batch Header ─────────────────────────────────────────────────────────────
@@ -39,7 +235,7 @@ function renderBatchHeader() {
         <div class="batch-fields">
           <div class="batch-field"><span class="bf-label">Source</span><span class="bf-val">${STORE.batch.source}</span></div>
           <div class="batch-field"><span class="bf-label">Received</span><span class="bf-val">${STORE.batch.receivedTime}</span></div>
-          <div class="batch-field"><span class="bf-label">Total Issues</span><span class="bf-val alert-count">${STORE.allAlerts.length}</span></div>
+          <div class="batch-field"><span class="bf-label">Total Issues</span><span class="bf-val alert-count">${STORE.allAlerts.filter((a) => a.category !== "resolved").length}</span></div>
         </div>
       </div>
       <div class="batch-actions">
@@ -53,7 +249,7 @@ function renderBatchHeader() {
 
 // ─── Summary Cards ────────────────────────────────────────────────────────────
 function renderSummaryCards() {
-  const total = STORE.allAlerts.length;
+  const total = STORE.allAlerts.filter((a) => a.category !== "resolved").length;
   const newCount = STORE.newAlerts.length;
   const knownCount = STORE.knownAlerts.length;
   const worseningCount = STORE.worseningAlerts.length;
@@ -82,19 +278,10 @@ function renderSummaryCards() {
       <div class="card-value">${worseningCount}</div>
       <div class="card-label">Worsening</div>
     </div>
-    <div class="card card-resolved" onclick="scrollToSection('section-resolved')">
-      <div class="card-value">${resolvedCount}</div>
-      <div class="card-label">Resolved</div>
-    </div>
     <div class="card card-growth">
       <div class="card-value text-red">${highestGrowth ? '+' + highestGrowth.growth : '—'}</div>
       <div class="card-label">Highest Growth</div>
       <div class="card-sub">${highestGrowth ? highestGrowth.hostname : ''}</div>
-    </div>
-    <div class="card card-time">
-      <div class="card-value card-time-val">12:43 PM</div>
-      <div class="card-label">Last Batch Time</div>
-      <div class="card-sub">Jun 30, 2026</div>
     </div>
   `;
 }
@@ -125,7 +312,6 @@ function renderFilterBar() {
           <option value="new" ${dashFilters.status === "new" ? "selected" : ""}>New / Unknown</option>
           <option value="known" ${dashFilters.status === "known" ? "selected" : ""}>Known</option>
           <option value="worsening" ${dashFilters.status === "worsening" ? "selected" : ""}>Worsening</option>
-          <option value="resolved" ${dashFilters.status === "resolved" ? "selected" : ""}>Resolved</option>
         </select>
       </div>
       <div class="filter-group">
@@ -136,17 +322,6 @@ function renderFilterBar() {
           <option value="high">High</option>
           <option value="medium">Medium</option>
           <option value="low">Low</option>
-        </select>
-      </div>
-      <div class="filter-group">
-        <label class="filter-label">Owner</label>
-        <select id="filter-owner" class="filter-select" onchange="onFilterChange()">
-          <option value="all">All Owners</option>
-          <option value="network-team">network-team</option>
-          <option value="app-team">app-team</option>
-          <option value="infra-team">infra-team</option>
-          <option value="integrations-team">integrations-team</option>
-          <option value="security-team">security-team</option>
         </select>
       </div>
       <div class="filter-group">
@@ -208,15 +383,15 @@ function applySortAndFilter(list) {
 // ─── All Sections ─────────────────────────────────────────────────────────────
 function renderAllSections() {
   const showAll = dashFilters.status === "all";
+  const setDisplay = (id, visible) => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = visible ? "" : "none";
+  };
 
-  document.getElementById("section-new").style.display =
-    showAll || dashFilters.status === "new" ? "" : "none";
-  document.getElementById("section-known").style.display =
-    showAll || dashFilters.status === "known" ? "" : "none";
-  document.getElementById("section-worsening").style.display =
-    showAll || dashFilters.status === "worsening" ? "" : "none";
-  document.getElementById("section-resolved").style.display =
-    showAll || dashFilters.status === "resolved" ? "" : "none";
+  setDisplay("section-new", showAll || dashFilters.status === "new");
+  setDisplay("section-known", showAll || dashFilters.status === "known");
+  setDisplay("section-worsening", showAll || dashFilters.status === "worsening");
+  setDisplay("section-resolved", showAll || dashFilters.status === "resolved");
 
   renderNewSection();
   renderKnownSection();
@@ -238,7 +413,7 @@ function renderNewSection() {
   if (!tbody) return;
 
   tbody.innerHTML = data.length === 0
-    ? `<tr><td colspan="10" class="no-results">No new issues match current filters.</td></tr>`
+    ? `<tr><td colspan="8" class="no-results">No new issues match current filters.</td></tr>`
     : data.map((a) => newAlertRow(a)).join("");
 }
 
@@ -253,14 +428,10 @@ function newAlertRow(a) {
       <td><span class="error-type">${a.errorType}</span></td>
       <td class="text-red font-bold">${a.count}</td>
       <td class="text-red font-bold">+${a.growth}</td>
-      <td class="text-muted">${a.firstSeen}</td>
-      <td class="text-muted">${a.lastSeen}</td>
       <td class="suggested-action">${a.suggestedAction}</td>
       <td class="action-btns">
-        <button class="btn btn-xs btn-info" onclick="showToast('Mark Known (placeholder)')">Mark Known</button>
-        <button class="btn btn-xs btn-warning" onclick="showToast('Create Ticket (placeholder)')">Ticket</button>
-        <button class="btn btn-xs btn-ghost" onclick="showToast('Investigate (placeholder)')">Investigate</button>
-        <button class="btn btn-xs btn-danger-ghost" onclick="showToast('Suppress (placeholder)')">Suppress</button>
+        <button class="btn btn-xs btn-info" onclick="markKnownFromRow('${a.id}')">Mark Known</button>
+        <button class="btn btn-xs btn-warning" onclick="linkTicketToRow('${a.id}')">Ticket</button>
         <button class="btn btn-xs btn-expand" onclick="toggleRow('${a.id}')">${isExpanded ? "▲ Less" : "▼ Details"}</button>
       </td>
     </tr>
@@ -271,7 +442,7 @@ function newAlertRow(a) {
 function expandedRowNew(a, fp) {
   return `
     <tr class="expand-row">
-      <td colspan="10">
+      <td colspan="8">
         <div class="expand-panel">
           <div class="expand-grid">
             <div class="expand-block">
@@ -281,20 +452,17 @@ function expandedRowNew(a, fp) {
               <div class="kv"><span class="k">Error Type</span><span class="v">${a.errorType}</span></div>
               <div class="kv"><span class="k">Count</span><span class="v text-red">${a.count}</span></div>
               <div class="kv"><span class="k">Growth</span><span class="v text-red">+${a.growth}</span></div>
-              <div class="kv"><span class="k">First Seen</span><span class="v">${a.firstSeen}</span></div>
-              <div class="kv"><span class="k">Last Seen</span><span class="v">${a.lastSeen}</span></div>
             </div>
             <div class="expand-block">
               <div class="expand-section-label">Classification</div>
               <div class="kv"><span class="k">Fingerprint</span><span class="v fp-chip">${fp}</span></div>
-              <div class="kv"><span class="k">Reason</span><span class="v">${a.classificationReason}</span></div>
-              <div class="kv"><span class="k">Matched Issue</span><span class="v text-muted">None</span></div>
               <div class="kv"><span class="k">Suggested Action</span><span class="v">${a.suggestedAction}</span></div>
+              <div class="kv"><span class="k">Ticket</span><span class="v">${renderTicketField(a)}</span></div>
             </div>
             <div class="expand-block expand-block-notes">
               <div class="expand-section-label">Notes</div>
-              <textarea class="notes-input" placeholder="Add investigation notes…">${a.notes}</textarea>
-              <button class="btn btn-xs btn-ghost mt-4" onclick="showToast('Note saved (placeholder)')">Save Note</button>
+              <textarea id="notes-${a.id}" class="notes-input" placeholder="Add investigation notes…">${a.notes || ""}</textarea>
+              <button class="btn btn-xs btn-ghost mt-4" onclick="saveNoteFromRow('${a.id}')">Save Note</button>
             </div>
           </div>
         </div>
@@ -327,13 +495,12 @@ function knownAlertRow(a) {
       <td class="${a.growth > 100 ? "text-orange" : "text-muted"}">+${a.growth}</td>
       <td><span class="ki-badge">${a.knownIssueId}</span></td>
       <td class="text-muted">${a.owner}</td>
-      <td><a href="${a.runbookLink}" class="link" onclick="showToast('Runbook (placeholder)');return false;">Runbook</a></td>
-      <td><a href="${a.ticketLink}" class="link" onclick="showToast('Ticket (placeholder)');return false;">${a.ticketLink.replace("#ticket-", "")}</a></td>
+      <td>${a.runbookLink ? `<a href="${a.runbookLink}" class="link" onclick="showToast('Runbook (placeholder)');return false;">Runbook</a>` : '<span class="text-muted">—</span>'}</td>
+      <td>${a.ticketLink ? `<a href="${a.ticketLink}" class="link" onclick="linkTicketToRow('${a.id}');return false;">${a.ticketLink.replace("#ticket-", "")}</a>` : `<a href="#" class="link text-muted" onclick="linkTicketToRow('${a.id}');return false;">Add</a>`}</td>
       <td class="action-btns">
-        <button class="btn btn-xs btn-info" onclick="showToast('View Runbook (placeholder)')">Runbook</button>
-        <button class="btn btn-xs btn-ghost" onclick="showToast('Link Ticket (placeholder)')">Ticket</button>
+        <button class="btn btn-xs btn-ghost" onclick="linkTicketToRow('${a.id}')">Ticket</button>
         <button class="btn btn-xs btn-ghost" onclick="showToast('Add Note (placeholder)')">Note</button>
-        <button class="btn btn-xs btn-warning" onclick="showToast('Escalate (placeholder)')">Escalate</button>
+        <button class="btn btn-xs btn-danger-ghost" onclick="unmarkKnownFromRow('${a.id}')">Unmark</button>
         <button class="btn btn-xs btn-expand" onclick="toggleRow('${a.id}')">${isExpanded ? "▲ Less" : "▼ Details"}</button>
       </td>
     </tr>
@@ -357,17 +524,17 @@ function expandedRowKnown(a, fp) {
               <div class="kv"><span class="k">Growth</span><span class="v ${a.growth > 100 ? "text-orange" : "text-muted"}">+${a.growth}</span></div>
             </div>
             <div class="expand-block">
-              <div class="expand-section-label">Matched Known Issue</div>
+              <div class="expand-section-label">Classification</div>
               <div class="kv"><span class="k">ID</span><span class="v"><span class="ki-badge">${a.knownIssueId}</span></span></div>
               <div class="kv"><span class="k">Fingerprint</span><span class="v fp-chip">${fp}</span></div>
-              <div class="kv"><span class="k">Reason</span><span class="v">${a.classificationReason}</span></div>
               ${ki ? `<div class="kv"><span class="k">Cause</span><span class="v">${ki.cause}</span></div>` : ""}
               ${ki ? `<div class="kv"><span class="k">Next Step</span><span class="v">${ki.resolutionSteps.split("\n")[0]}</span></div>` : ""}
+              <div class="kv"><span class="k">Ticket</span><span class="v">${renderTicketField(a)}</span></div>
             </div>
             <div class="expand-block expand-block-notes">
               <div class="expand-section-label">Notes</div>
-              <textarea class="notes-input" placeholder="Add notes…">${a.notes}</textarea>
-              <button class="btn btn-xs btn-ghost mt-4" onclick="showToast('Note saved (placeholder)')">Save Note</button>
+              <textarea id="notes-${a.id}" class="notes-input" placeholder="Add notes…">${a.notes || ""}</textarea>
+              <button class="btn btn-xs btn-ghost mt-4" onclick="saveNoteFromRow('${a.id}')">Save Note</button>
             </div>
           </div>
         </div>
@@ -390,23 +557,24 @@ function renderWorseningSection() {
 function worseningAlertRow(a) {
   const fp = buildFingerprint(a);
   const isExpanded = expandedRows.has(a.id);
-  const sevClass = { critical: "sev-critical", high: "sev-high", medium: "sev-medium", low: "sev-low" }[a.severity] || "";
+  const severity = (a.severity || "medium").toLowerCase();
+  const sevClass = { critical: "sev-critical", high: "sev-high", medium: "sev-medium", low: "sev-low" }[severity] || "sev-medium";
   return `
     <tr class="alert-row alert-row-worsening" id="row-${a.id}">
       <td><span class="status-badge status-worsening">WORSENING</span></td>
       <td class="mono">${a.hostname}</td>
       <td class="mono text-muted">${a.logFile}</td>
       <td><span class="error-type">${a.errorType}</span></td>
-      <td class="text-muted">${a.normalRange}</td>
+      <td class="text-muted">${a.normalRange ?? "—"}</td>
       <td class="text-red font-bold">${a.currentCount}</td>
       <td class="text-red font-bold">+${a.growth}</td>
-      <td><span class="sev-badge ${sevClass}">${a.severity.toUpperCase()}</span></td>
-      <td class="text-muted small">${a.escalationRule}</td>
+      <td><span class="sev-badge ${sevClass}">${severity.toUpperCase()}</span></td>
+      <td class="text-muted small">${a.escalationRule ?? "—"}</td>
       <td class="action-btns">
-        <button class="btn btn-xs btn-danger" onclick="showToast('Escalate (placeholder)')">Escalate</button>
         <button class="btn btn-xs btn-ghost" onclick="showToast('View History (placeholder)')">History</button>
-        <button class="btn btn-xs btn-warning" onclick="showToast('Create Incident (placeholder)')">Incident</button>
+        <button class="btn btn-xs btn-warning" onclick="linkTicketToRow('${a.id}')">Ticket</button>
         <button class="btn btn-xs btn-ghost" onclick="showToast('Add Note (placeholder)')">Note</button>
+        <button class="btn btn-xs btn-danger-ghost" onclick="unmarkKnownFromRow('${a.id}')">Unmark</button>
         <button class="btn btn-xs btn-expand" onclick="toggleRow('${a.id}')">${isExpanded ? "▲ Less" : "▼ Details"}</button>
       </td>
     </tr>
@@ -433,14 +601,13 @@ function expandedRowWorsening(a, fp) {
             <div class="expand-block">
               <div class="expand-section-label">Classification</div>
               <div class="kv"><span class="k">Fingerprint</span><span class="v fp-chip">${fp}</span></div>
-              <div class="kv"><span class="k">Known Issue</span><span class="v"><span class="ki-badge">${a.knownIssueId}</span></span></div>
-              <div class="kv"><span class="k">Reason</span><span class="v">${a.classificationReason}</span></div>
               <div class="kv"><span class="k">Escalation Rule</span><span class="v text-orange">${a.escalationRule}</span></div>
+              <div class="kv"><span class="k">Ticket</span><span class="v">${renderTicketField(a)}</span></div>
             </div>
             <div class="expand-block expand-block-notes">
               <div class="expand-section-label">Notes</div>
-              <textarea class="notes-input" placeholder="Add incident notes…">${a.notes}</textarea>
-              <button class="btn btn-xs btn-ghost mt-4" onclick="showToast('Note saved (placeholder)')">Save Note</button>
+              <textarea id="notes-${a.id}" class="notes-input" placeholder="Add incident notes…">${a.notes || ""}</textarea>
+              <button class="btn btn-xs btn-ghost mt-4" onclick="saveNoteFromRow('${a.id}')">Save Note</button>
             </div>
           </div>
         </div>
@@ -474,7 +641,7 @@ function resolvedAlertRow(a) {
       <td>${a.resolutionNotes}</td>
       <td class="text-muted">${a.knownIssueId ? `<span class="ki-badge">${a.knownIssueId}</span>` : "—"}</td>
       <td class="action-btns">
-        <button class="btn btn-xs btn-warning" onclick="showToast('Reopen (placeholder)')">Reopen</button>
+        <button class="btn btn-xs btn-warning" onclick="reopenAlert('${a.id}')">Reopen</button>
         <button class="btn btn-xs btn-ghost" onclick="showToast('Archive (placeholder)')">Archive</button>
         <button class="btn btn-xs btn-ghost" onclick="showToast('View History (placeholder)')">History</button>
         <button class="btn btn-xs btn-expand" onclick="toggleRow('${a.id}')">${isExpanded ? "▲ Less" : "▼ Details"}</button>
@@ -496,14 +663,12 @@ function expandedRowResolved(a, fp) {
               <div class="kv"><span class="k">Log File</span><span class="v mono">${a.logFile}</span></div>
               <div class="kv"><span class="k">Error Type</span><span class="v">${a.errorType}</span></div>
               <div class="kv"><span class="k">Previous Count</span><span class="v">${a.previousCount}</span></div>
-              <div class="kv"><span class="k">Last Seen</span><span class="v">${a.lastSeen}</span></div>
             </div>
             <div class="expand-block">
               <div class="expand-section-label">Classification</div>
               <div class="kv"><span class="k">Fingerprint</span><span class="v fp-chip">${fp}</span></div>
-              <div class="kv"><span class="k">Known Issue</span><span class="v">${a.knownIssueId ? `<span class="ki-badge">${a.knownIssueId}</span>` : "—"}</span></div>
-              <div class="kv"><span class="k">Reason</span><span class="v">Previously active issue not seen in current batch.</span></div>
               <div class="kv"><span class="k">Resolution Notes</span><span class="v">${a.resolutionNotes}</span></div>
+              <div class="kv"><span class="k">Ticket</span><span class="v">${renderTicketField(a)}</span></div>
             </div>
             <div class="expand-block expand-block-notes">
               <div class="expand-section-label">Notes</div>

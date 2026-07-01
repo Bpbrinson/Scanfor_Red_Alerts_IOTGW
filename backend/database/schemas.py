@@ -63,6 +63,7 @@ class AlertStatusUpdate(BaseModel):
     category: Optional[str] = None  # defaults to status if not provided
     changed_by: str = "user"
     change_reason: Optional[str] = None
+    clear_known_issue: bool = False  # unlink KI + related fields when true
 
 
 # ─── Mark Known ───────────────────────────────────────────────────────────────
@@ -70,4 +71,9 @@ class AlertStatusUpdate(BaseModel):
 class MarkKnownRequest(BaseModel):
     known_issue_id: Optional[str] = None          # link to existing KI
     new_known_issue: Optional[KnownIssueCreate] = None  # or create a new one
+    changed_by: str = "user"
+
+
+class AlertTicketUpdate(BaseModel):
+    ticket_link: Optional[str] = None
     changed_by: str = "user"

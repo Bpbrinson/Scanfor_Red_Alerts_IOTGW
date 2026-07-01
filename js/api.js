@@ -105,6 +105,12 @@ async function getPromStatus() {
   return res.json();
 }
 
+async function getPromFiles() {
+  const res = await fetch(`${API_BASE}/prom/files`);
+  if (!res.ok) throw new Error(`/api/prom/files returned ${res.status}`);
+  return res.json();
+}
+
 async function processPromFile() {
   const res = await fetch(`${API_BASE}/prom/process`, { method: "POST" });
   if (!res.ok) {
@@ -119,4 +125,56 @@ async function getKnownIssues() {
   if (!res.ok) throw new Error(`/api/known-issues returned ${res.status}`);
   const data = await res.json();
   return data.map(_transformKnownIssue);
+}
+
+async function markAlertKnown(alertId, payload) {
+  const res = await fetch(`${API_BASE}/alerts/${encodeURIComponent(alertId)}/mark-known`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const error = await res.json().catch(() => null);
+    throw new Error(error?.detail || `mark-known returned ${res.status}`);
+  }
+  return res.json();
+}
+
+async function saveAlertNote(alertId, note) {
+  const res = await fetch(`${API_BASE}/alerts/${encodeURIComponent(alertId)}/notes`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ note, created_by: "user" }),
+  });
+  if (!res.ok) {
+    const error = await res.json().catch(() => null);
+    throw new Error(error?.detail || `note save returned ${res.status}`);
+  }
+  return res.json();
+}
+
+async function updateAlertTicket(alertId, ticketLink) {
+  const res = await fetch(`${API_BASE}/alerts/${encodeURIComponent(alertId)}/ticket`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ticket_link: ticketLink, changed_by: "user" }),
+  });
+  if (!res.ok) {
+    const error = await res.json().catch(() => null);
+    throw new Error(error?.detail || `ticket update returned ${res.status}`);
+  }
+  return res.json();
+}
+
+async function updateAlertStatus(alertId, payload) {
+  const res = await fetch(`${API_BASE}/alerts/${encodeURIComponent(alertId)}/status`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const error = await res.json().catch(() => null);
+    throw new Error(error?.detail || `status update returned ${res.status}`);
+  }
+  return res.json();
 }

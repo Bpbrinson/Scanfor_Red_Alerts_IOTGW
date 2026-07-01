@@ -15,6 +15,7 @@ from backend.database.models import (
 from backend.database.schemas import (
     AlertNoteCreate,
     AlertStatusUpdate,
+    AlertTicketUpdate,
     MarkKnownRequest,
 )
 from backend.services.classifier import classify_alert
@@ -51,7 +52,7 @@ def _event_to_dict(event: AlertEvent) -> dict:
 
 
 def _generate_known_issue_id(db: Session) -> str:
-    known_issue_ids = db.query(KnownIssue.known_issue_id).scalars().all()
+    known_issue_ids = [row[0] for row in db.query(KnownIssue.known_issue_id).all()]
     max_number = 0
     for value in known_issue_ids:
         try:
@@ -64,7 +65,7 @@ def _generate_known_issue_id(db: Session) -> str:
 
 
 def _latest_batch_id(db: Session) -> Optional[str]:
-    latest = db.query(AlertBatch).order_by(AlertBatch.received_time.desc()).first()
+    latest = db.query(AlertBatch).order_by(AlertBatch.id.desc()).first()
     return latest.batch_id if latest else None
 
 
@@ -88,7 +89,7 @@ def _normalize_category(category: Optional[str]) -> Optional[str]:
 
 @router.get("/alert-batches/latest")
 def get_latest_batch(db: Session = Depends(get_db)):
-    batch = db.query(AlertBatch).order_by(AlertBatch.received_time.desc()).first()
+    batch = db.query(AlertBatch).order_by(AlertBatch.id.desc()).first()
     if not batch:
         raise HTTPException(status_code=404, detail="No alert batches found")
 
@@ -150,6 +151,23 @@ def get_alerts(
     return [_event_to_dict(event) for event in events]
 
 
+@router.patch("/alerts/{alert_id}/ticket")
+def update_alert_ticket(
+    alert_id: str,
+    update: AlertTicketUpdate,
+    db: Session = Depends(get_db),
+):
+    event = db.query(AlertEvent).filter_by(alert_id=alert_id).first()
+    if not event:
+        raise HTTPException(status_code=404, detail="Alert not found")
+
+    event.ticket_link = update.ticket_link or None
+    db.add(event)
+    db.commit()
+    db.refresh(event)
+    return _event_to_dict(event)
+
+
 @router.post("/alerts/{alert_id}/notes")
 def add_alert_note(
     alert_id: str,
@@ -165,7 +183,7 @@ def add_alert_note(
         note=note_request.note,
         created_by=note_request.created_by,
     )
-    event.notes = f"{event.notes or ''}{event.notes and '\n' or ''}{note_request.note}".strip()
+    event.notes = note_request.note or ""
     db.add(note)
     db.add(event)
     db.commit()
@@ -193,6 +211,15 @@ def update_alert_status(
     old_category = event.category
     event.status = status_update.status
     event.category = status_update.category or status_update.status
+
+    if status_update.clear_known_issue:
+        event.known_issue_id = None
+        event.owner = None
+        event.runbook_link = None
+        event.normal_range = None
+        event.escalation_rule = None
+        event.classification_reason = "Manually moved back to New / Unknown."
+        event.suggested_action = f"Re-triage {event.error_type} on {event.hostname}"
 
     history = IssueStatusHistory(
         alert_event_id=alert_id,
@@ -253,16 +280,34 @@ def mark_alert_known(
         known_issues=[known_issue],
     )
 
+    # User explicitly linked this alert to a KI — force it out of "new".
+    # Worsening requires actual growth since the last snapshot; a high count
+    # with growth == 0 stays "known".
+    forced_category = "worsening" if classification["category"] == "worsening" else "known"
+
+    max_count = known_issue.normal_count_max or 0
+    if (
+        event.count is not None
+        and max_count
+        and event.count > max_count
+        and (event.growth or 0) > 0
+    ):
+        forced_category = "worsening"
+
     old_status = event.status
-    event.status = classification["category"]
-    event.category = classification["category"]
+    event.status = forced_category
+    event.category = forced_category
     event.known_issue_id = known_issue.known_issue_id
-    event.owner = known_issue.owner
+    event.owner = known_issue.owner or event.owner
     event.runbook_link = known_issue.runbook_link
     event.ticket_link = known_issue.ticket_link
-    event.severity = classification["severity"]
-    event.classification_reason = classification["classification_reason"]
-    event.suggested_action = classification["suggested_action"]
+    event.severity = classification["severity"] or known_issue.severity
+    event.classification_reason = (
+        classification["classification_reason"]
+        if classification["category"] != "new"
+        else f"Manually linked to Known Issue {known_issue.known_issue_id}."
+    )
+    event.suggested_action = classification["suggested_action"] or (known_issue.resolution_steps or "").split("\n")[0]
 
     history = IssueStatusHistory(
         alert_event_id=alert_id,

@@ -132,14 +132,16 @@ def classify_alert(
         }
 
     max_count = _get(ki, "normal_count_max") or 100
-    is_worsening = count > max_count or growth > max_count
+    # Worsening requires actual growth since the last snapshot; a high count
+    # with growth == 0 stays classified as known.
+    is_worsening = growth > 0 and (count > max_count or growth > max_count)
 
     if is_worsening:
         return {
             "category": "worsening",
             "classification_reason": (
-                f"Known issue matched ({_get(ki, 'known_issue_id')}), but count or growth "
-                f"exceeded normal threshold (max {max_count})."
+                f"Known issue matched ({_get(ki, 'known_issue_id')}); count or growth "
+                f"exceeded normal threshold (max {max_count}) and growth is > 0."
             ),
             "known_issue_id": _get(ki, "known_issue_id"),
             "severity": _escalate_severity(_get(ki, "severity") or "medium"),

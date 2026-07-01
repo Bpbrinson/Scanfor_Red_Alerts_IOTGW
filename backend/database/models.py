@@ -123,6 +123,8 @@ class PromSnapshot(Base):
     snapshot_id = Column(String, unique=True, index=True, nullable=False)
     batch_id = Column(String, ForeignKey("alert_batches.batch_id"), nullable=False)
     file_path = Column(String)
+    source_mode = Column(String, default="file")
+    total_files = Column(Integer, default=1)
     file_hash = Column(String)
     file_modified_time = Column(String)
     processed_at = Column(String)
@@ -134,6 +136,25 @@ class PromSnapshot(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     batch = relationship("AlertBatch")
+    files = relationship("PromSnapshotFile", back_populates="snapshot", cascade="all, delete-orphan")
+
+
+class PromSnapshotFile(Base):
+    __tablename__ = "prom_snapshot_files"
+
+    id = Column(Integer, primary_key=True, index=True)
+    snapshot_id = Column(String, ForeignKey("prom_snapshots.snapshot_id"), nullable=False, index=True)
+    filename = Column(String, nullable=False)
+    file_path = Column(String)
+    file_hash = Column(String)
+    file_modified_time = Column(String)
+    size_bytes = Column(Integer, default=0)
+    metric_count = Column(Integer, default=0)
+    generated_time = Column(String, nullable=True)
+    state_file = Column(String, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    snapshot = relationship("PromSnapshot", back_populates="files")
 
 
 class IssueStatusHistory(Base):

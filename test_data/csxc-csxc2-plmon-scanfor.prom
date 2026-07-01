@@ -1,8 +1,0 @@
-# HELP scanfor_errors Total errors matching scanfor patterns
-# TYPE scanfor_errors gauge
-# Generated: 2026-06-30 19:45:12
-# State file: /tmp/scanfor_state_csxc_csxc2_2026-06-30.dat
-scanfor_errors{system_type="IotGW",system="csxc",hostname="csxc-csxc2-plmon-scanfor",tenant="subaru",filename="subarulistener-main.20260630",error_type="ERROR_log",error_index="0",color="black",known_error="false",note="",caused_by="SubaruClient.java:112"} 143
-scanfor_errors{system_type="IotGW",system="csxc",hostname="csxc-csxc2-plmon-scanfor",tenant="subaru",filename="subarulistener-main.20260630",error_type="java_exception",error_index="2",color="yellow",known_error="false",note="",caused_by="SubaruClient.java:112"} 148
-scanfor_errors{system_type="IotGW",system="csxc",hostname="csxc-csxc2-plmon-scanfor",tenant="subaru",filename="subaruserver-main.20260630",error_type="SQLException",error_index="11",color="red",known_error="false",note="",caused_by="SubaruEventDao.java:218"} 21
-scanfor_errors{system_type="IotGW",system="csxc",hostname="csxc-csxc2-plmon-scanfor",tenant="subaru",filename="subaruserver-main.20260630",error_type="javax_net_ssl",error_index="5",color="red",known_error="false",note=""} 17

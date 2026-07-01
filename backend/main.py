@@ -14,6 +14,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
+from backend.database.db import Base, engine
+from backend.database import models  # noqa: F401 — register models with Base
 from backend.routes import health, summary, alerts, known_issues, alert_batches, prom
 from backend.services.prom_watcher import start_prom_watcher, stop_prom_watcher
 
@@ -43,6 +45,9 @@ app.include_router(prom.router, prefix="/api")
 
 @app.on_event("startup")
 async def startup_event():
+    # Idempotent — creates any tables that don't exist yet. Safe in containers
+    # where the SQLite file lives on a first-run empty volume.
+    Base.metadata.create_all(bind=engine)
     await start_prom_watcher()
 
 

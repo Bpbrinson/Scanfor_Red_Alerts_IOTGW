@@ -196,10 +196,144 @@ Same logic in both `js/fingerprint.js` and `backend/services/fingerprint.py`.
 
 ---
 
+## Docker
+
+The whole app (FastAPI backend + static frontend) runs in a single container.
+
+### Quick start with docker compose
+
+```bash
+docker compose up --build
+```
+
+Then open `http://localhost:9000`.
+
+By default:
+- `${SCANFOR_PROM_SOURCE:-C:/Users/brand/OneDrive/Documents/test_data}` is bind-mounted **read-only** at `/prom` inside the container as the `.prom` source folder.
+- The SQLite database lives on a named Docker volume `scanfor-db` mounted at `/data`, so it persists across restarts and rebuilds.
+- Tables are auto-created on startup (idempotent) — no separate `init_db` step is needed inside the container.
+
+### Environment variables
+
+| Variable | Default (container) | Meaning |
+|---|---|---|
+| `SCANFOR_PROM_FILE_PATH` | `/prom` | File **or** directory of `*.prom` files |
+| `SCANFOR_DB_PATH` | `/data/scanfor_red.db` | SQLite database file location |
+| `SCANFOR_PROM_POLL_SECONDS` | `60` | Watcher poll interval |
+| `SCANFOR_ENABLE_PROM_WATCHER` | `false` | `true` to auto-poll every N seconds |
+
+### Pointing at the real server folder
+
+Edit `docker-compose.yml` and change the bind mount:
+
+```yaml
+volumes:
+  - C:/Users/brand/OneDrive/Documents/test_data:/prom:ro
+  - scanfor-db:/data
+```
+
+Or override at runtime:
+
+```bash
+docker run --rm -p 9000:9000 \
+  -v C:/Users/brand/OneDrive/Documents/test_data:/prom:ro \
+  -v scanfor-db:/data \
+  scanfor-red-alerts:latest
+```
+
+### Reset the database
+
+```bash
+docker compose down -v          # -v removes the scanfor-db volume
+docker compose up --build
+```
+
+### Alternative: bind-mount the DB dir to the host
+
+If you prefer the DB file on your host filesystem instead of a named volume,
+replace `- scanfor-db:/data` in `docker-compose.yml` with a bind mount, e.g.:
+
+```yaml
+- ./docker_data:/data
+```
+
+Note: on Windows/OneDrive paths, named volumes are more reliable than bind
+mounts for SQLite due to file-locking quirks.
+
+---
+
+## Phase 4 — Folder-based `.prom` Ingestion
+
+The dashboard reads Prometheus `scanfor_errors` metric files from a folder
+(or a single file), snapshots each read into SQLite, and compares snapshots
+to compute growth and resolved alerts. `.prom` files are never modified.
+
+### Configuration
+
+| Env var | Default | Meaning |
+|---|---|---|
+| `SCANFOR_PROM_FILE_PATH` | `/prom` | File **or** directory containing `*.prom` |
+| `SCANFOR_PROM_POLL_SECONDS` | `60` | Watcher poll interval |
+| `SCANFOR_ENABLE_PROM_WATCHER` | `false` | Set `true` to auto-poll on startup |
+
+If the configured path is a directory, every `*.prom` file inside is loaded
+and combined into one snapshot per processing pass.
+
+### Endpoints
+
+| Method | Path | Description |
+|---|---|---|
+| GET | `/api/prom/status` | Configured path, path type, file counts, latest snapshot, recent error, and file inventory summary |
+| GET | `/api/prom/files` | Full file inventory (filename, size, mtime, metric count, generated time, state file) |
+| POST | `/api/prom/process` | Process the folder now — returns `processed` or `skipped` plus per-file counts |
+| GET | `/api/prom/snapshots` | Snapshot history (`limit` query) |
+| GET | `/api/prom/snapshots/latest` | Latest snapshot with per-file rows |
+
+### Batch / snapshot IDs
+
+Batch and snapshot IDs include a 6-char slice of the folder hash so runs with
+identical `# Generated:` timestamps can't collide:
+
+```
+PROM-20260630-194501-068cbe
+```
+
+### Change detection
+
+- Fingerprint match priority: `fingerprint_exact` first, then `fingerprint_general`.
+- `previous_count` and `growth` are computed against the previous successful snapshot.
+- `first_seen` is preserved from the earlier matching alert.
+- Resolved alerts are only emitted when the previous snapshot had the fingerprint as *active*. This prevents duplicate resolved rows on every subsequent pass.
+
+### Testing Folder Ingestion
+
+Using an external `.prom` source folder:
+
+1. Reset the local DB: `python -m backend.database.init_db --reset`
+2. Set `SCANFOR_PROM_FILE_PATH` to the folder or file that contains your dashboard source metrics.
+3. Start the backend: `python -m uvicorn backend.main:app --reload --port 9000`
+4. Open `http://localhost:9000`
+5. Click **Process .prom Folder Now** to process the configured source.
+6. Refresh or update the source metrics, then click **Process .prom Folder Now** again to compare snapshots.
+7. Remove or omit a metric line from the source, process again, and that fingerprint appears in the Resolved section.
+8. In **Known Issues** view, add a known issue whose `fingerprint` matches one of the alerts.
+9. Click **Process .prom Folder Now**; the matching alert moves from *New* to *Known* (or *Worsening* if its count exceeds `normal_count_max`).
+
+
+### What is stored where
+
+| Data | Source of truth |
+|---|---|
+| Live metric counts | `.prom` files (read-only) |
+| Known issues, notes, tickets, owners, statuses, history | SQLite database |
+
+---
+
 ## Phase History
 
 | Phase | Description |
 |---|---|
 | Phase 1 | Frontend only — static HTML/CSS/JS with hardcoded mock data |
 | Phase 2 | FastAPI backend + API fetch layer; frontend connected to backend |
-| Phase 3 | Real email parsing + database (planned) |
+| Phase 3 | SQLite database layer + database-backed API |
+| Phase 4 | Folder-based `.prom` ingestion, snapshot tracking, change detection |
