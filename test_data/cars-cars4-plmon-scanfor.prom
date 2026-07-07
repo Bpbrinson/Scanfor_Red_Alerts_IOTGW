@@ -1,8 +1,0 @@
-# HELP scanfor_errors Total errors matching scanfor patterns
-# TYPE scanfor_errors gauge
-# Generated: 2026-07-01 09:01:37
-# State file: /tmp/scanfor_state_cars_cars4_2026-06-30.dat
-scanfor_errors{system_type="IotGW",system="cars",hostname="cars-cars4-plmon-scanfor",tenant="cars",filename="notification-main.20260630",error_type="ERROR_log",error_index="0",color="black",known_error="false",note="",caused_by="NotificationClient.java:205"} 875
-scanfor_errors{system_type="IotGW",system="cars",hostname="cars-cars4-plmon-scanfor",tenant="cars",filename="notification-main.20260630",error_type="java_exception",error_index="2",color="yellow",known_error="false",note="",caused_by="NotificationClient.java:205"} 1387
-scanfor_errors{system_type="IotGW",system="cars",hostname="cars-cars4-plmon-scanfor",tenant="cars",filename="notification-main.20260630",error_type="HttpClientErrorException",error_index="9",color="yellow",known_error="true",note="mock partner 429 burst"} 2507
-scanfor_errors{system_type="IotGW",system="cars",hostname="cars-cars4-plmon-scanfor",tenant="cars",filename="notification-trace.20260630",error_type="javax_net_ssl",error_index="5",color="red",known_error="false",note=""} 1355

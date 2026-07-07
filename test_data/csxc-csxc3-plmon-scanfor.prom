@@ -1,8 +1,0 @@
-# HELP scanfor_errors Total errors matching scanfor patterns
-# TYPE scanfor_errors gauge
-# Generated: 2026-07-01 08:43:37
-# State file: /tmp/scanfor_state_csxc_csxc3_2026-06-30.dat
-scanfor_errors{system_type="IotGW",system="csxc",hostname="csxc-csxc3-plmon-scanfor",tenant="subaru",filename="subarucommand-main.20260630",error_type="ERROR_log",error_index="0",color="black",known_error="true",note="mock malformed command payload",caused_by="CommandValidator.java:56"} 882
-scanfor_errors{system_type="IotGW",system="csxc",hostname="csxc-csxc3-plmon-scanfor",tenant="subaru",filename="subarucommand-main.20260630",error_type="java_exception",error_index="2",color="yellow",known_error="false",note="",caused_by="CommandValidator.java:56"} 1407
-scanfor_errors{system_type="IotGW",system="csxc",hostname="csxc-csxc3-plmon-scanfor",tenant="subaru",filename="subarucommand-main.20260630",error_type="IllegalArgumentException",error_index="6",color="yellow",known_error="false",note=""} 4111
-scanfor_errors{system_type="IotGW",system="csxc",hostname="csxc-csxc3-plmon-scanfor",tenant="subaru",filename="trapserver.20260630",error_type="NullPointerException",error_index="3",color="red",known_error="false",note=""} 39

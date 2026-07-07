@@ -13,7 +13,7 @@ services:
     volumes:
       # Bind-mount the .prom source folder read-only.
       # Override SCANFOR_PROM_SOURCE to point at a different source folder.
-      - ${SCANFOR_PROM_SOURCE:-C:/Users/brand/OneDrive/Documents/test_data}:/prom:ro
+      - ${SCANFOR_PROM_SOURCE:-/Users/bpb/Documents/Test_Data}:/prom:ro
       # Persist the SQLite database across container restarts.
       - scanfor-db:/data
     restart: unless-stopped

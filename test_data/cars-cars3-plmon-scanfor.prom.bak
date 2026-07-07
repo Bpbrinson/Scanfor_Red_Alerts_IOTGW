@@ -1,8 +1,0 @@
-# HELP scanfor_errors Total errors matching scanfor patterns
-# TYPE scanfor_errors gauge
-# Generated: 2026-07-01 09:03:37
-# State file: /tmp/scanfor_state_cars_cars3_2026-06-30.dat
-scanfor_errors{system_type="IotGW",system="cars",hostname="cars-cars3-plmon-scanfor",tenant="cars",filename="telematics-main.20260630",error_type="ERROR_log",error_index="0",color="black",known_error="false",note="",caused_by="TelemetryParser.java:92"} 1396
-scanfor_errors{system_type="IotGW",system="cars",hostname="cars-cars3-plmon-scanfor",tenant="cars",filename="telematics-main.20260630",error_type="java_exception",error_index="2",color="yellow",known_error="false",note="",caused_by="TelemetryParser.java:92"} 399
-scanfor_errors{system_type="IotGW",system="cars",hostname="cars-cars3-plmon-scanfor",tenant="cars",filename="telematics-main.20260630",error_type="IllegalArgumentException",error_index="6",color="yellow",known_error="false",note=""} 921
-scanfor_errors{system_type="IotGW",system="cars",hostname="cars-cars3-plmon-scanfor",tenant="cars",filename="smslistener-main.20260630",error_type="ERROR_log",error_index="0",color="black",known_error="false",note=""} 2200

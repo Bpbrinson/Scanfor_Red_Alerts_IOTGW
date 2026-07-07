@@ -209,7 +209,7 @@ docker compose up --build
 Then open `http://localhost:9000`.
 
 By default:
-- `${SCANFOR_PROM_SOURCE:-C:/Users/brand/OneDrive/Documents/test_data}` is bind-mounted **read-only** at `/prom` inside the container as the `.prom` source folder.
+- `${SCANFOR_PROM_SOURCE:-/Users/bpb/Documents/Test_Data}` is bind-mounted **read-only** at `/prom` inside the container as the `.prom` source folder.
 - The SQLite database lives on a named Docker volume `scanfor-db` mounted at `/data`, so it persists across restarts and rebuilds.
 - Tables are auto-created on startup (idempotent) — no separate `init_db` step is needed inside the container.
 
@@ -228,7 +228,7 @@ Edit `docker-compose.yml` and change the bind mount:
 
 ```yaml
 volumes:
-  - C:/Users/brand/OneDrive/Documents/test_data:/prom:ro
+  - /Users/bpb/Documents/Test_Data:/prom:ro
   - scanfor-db:/data
 ```
 
@@ -236,7 +236,7 @@ Or override at runtime:
 
 ```bash
 docker run --rm -p 9000:9000 \
-  -v C:/Users/brand/OneDrive/Documents/test_data:/prom:ro \
+  -v /Users/bpb/Documents/Test_Data:/prom:ro \
   -v scanfor-db:/data \
   scanfor-red-alerts:latest
 ```
