@@ -114,11 +114,11 @@ def get_latest_batch(db: Session = Depends(get_db)):
 
 @router.get("/alerts")
 def get_alerts(
-    category: str | None = None,
-    severity: str | None = None,
-    hostname: str | None = None,
-    error_type: str | None = None,
-    batch_id: str | None = None,
+    category: Optional[str] = None,
+    severity: Optional[str] = None,
+    hostname: Optional[str] = None,
+    error_type: Optional[str] = None,
+    batch_id: Optional[str] = None,
     db: Session = Depends(get_db),
 ):
     latest_batch_id = _latest_batch_id(db)

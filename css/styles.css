@@ -462,7 +462,7 @@ thead th {
 .alert-row td {
   padding: 9px 12px;
   border-bottom: 1px solid var(--border);
-  vertical-align: middle;
+  vertical-align: top;
 }
 
 .alert-row:last-child td { border-bottom: none; }
@@ -637,7 +637,7 @@ thead th {
 .btn-sm { padding: 5px 12px; font-size: 12px; }
 .btn-xs { padding: 3px 8px; font-size: 11px; }
 
-.action-btns { display: flex; gap: 4px; flex-wrap: wrap; }
+.action-btns { display: flex; gap: 4px; flex-wrap: nowrap; white-space: nowrap; }
 
 /* ─── Known Issues Table extras ─────────────────────────────────────────────── */
 .ellipsis { max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

@@ -429,11 +429,11 @@ function newAlertRow(a) {
       <td class="text-red font-bold">${a.count}</td>
       <td class="text-red font-bold">+${a.growth}</td>
       <td class="suggested-action">${a.suggestedAction}</td>
-      <td class="action-btns">
+      <td><div class="action-btns">
         <button class="btn btn-xs btn-info" onclick="markKnownFromRow('${a.id}')">Mark Known</button>
         <button class="btn btn-xs btn-warning" onclick="linkTicketToRow('${a.id}')">Ticket</button>
         <button class="btn btn-xs btn-expand" onclick="toggleRow('${a.id}')">${isExpanded ? "▲ Less" : "▼ Details"}</button>
-      </td>
+      </div></td>
     </tr>
     ${isExpanded ? expandedRowNew(a, fp) : ""}
   `;
@@ -478,7 +478,7 @@ function renderKnownSection() {
   if (!tbody) return;
 
   tbody.innerHTML = data.length === 0
-    ? `<tr><td colspan="11" class="no-results">No known issues match current filters.</td></tr>`
+    ? `<tr><td colspan="9" class="no-results">No known issues match current filters.</td></tr>`
     : data.map((a) => knownAlertRow(a)).join("");
 }
 
@@ -494,15 +494,13 @@ function knownAlertRow(a) {
       <td class="font-bold">${a.count}</td>
       <td class="${a.growth > 100 ? "text-orange" : "text-muted"}">+${a.growth}</td>
       <td><span class="ki-badge">${a.knownIssueId}</span></td>
-      <td class="text-muted">${a.owner}</td>
-      <td>${a.runbookLink ? `<a href="${a.runbookLink}" class="link" onclick="showToast('Runbook (placeholder)');return false;">Runbook</a>` : '<span class="text-muted">—</span>'}</td>
       <td>${a.ticketLink ? `<a href="${a.ticketLink}" class="link" onclick="linkTicketToRow('${a.id}');return false;">${a.ticketLink.replace("#ticket-", "")}</a>` : `<a href="#" class="link text-muted" onclick="linkTicketToRow('${a.id}');return false;">Add</a>`}</td>
-      <td class="action-btns">
+      <td><div class="action-btns">
         <button class="btn btn-xs btn-ghost" onclick="linkTicketToRow('${a.id}')">Ticket</button>
         <button class="btn btn-xs btn-ghost" onclick="showToast('Add Note (placeholder)')">Note</button>
         <button class="btn btn-xs btn-danger-ghost" onclick="unmarkKnownFromRow('${a.id}')">Unmark</button>
         <button class="btn btn-xs btn-expand" onclick="toggleRow('${a.id}')">${isExpanded ? "▲ Less" : "▼ Details"}</button>
-      </td>
+      </div></td>
     </tr>
     ${isExpanded ? expandedRowKnown(a, fp) : ""}
   `;
@@ -512,7 +510,7 @@ function expandedRowKnown(a, fp) {
   const ki = STORE.knownIssuesCatalog.find((k) => k.id === a.knownIssueId);
   return `
     <tr class="expand-row">
-      <td colspan="11">
+      <td colspan="9">
         <div class="expand-panel">
           <div class="expand-grid">
             <div class="expand-block">
@@ -550,7 +548,7 @@ function renderWorseningSection() {
   if (!tbody) return;
 
   tbody.innerHTML = data.length === 0
-    ? `<tr><td colspan="10" class="no-results">No worsening issues match current filters.</td></tr>`
+    ? `<tr><td colspan="8" class="no-results">No worsening issues match current filters.</td></tr>`
     : data.map((a) => worseningAlertRow(a)).join("");
 }
 
@@ -568,15 +566,12 @@ function worseningAlertRow(a) {
       <td class="text-muted">${a.normalRange ?? "—"}</td>
       <td class="text-red font-bold">${a.currentCount}</td>
       <td class="text-red font-bold">+${a.growth}</td>
-      <td><span class="sev-badge ${sevClass}">${severity.toUpperCase()}</span></td>
-      <td class="text-muted small">${a.escalationRule ?? "—"}</td>
-      <td class="action-btns">
-        <button class="btn btn-xs btn-ghost" onclick="showToast('View History (placeholder)')">History</button>
+      <td><div class="action-btns">
         <button class="btn btn-xs btn-warning" onclick="linkTicketToRow('${a.id}')">Ticket</button>
         <button class="btn btn-xs btn-ghost" onclick="showToast('Add Note (placeholder)')">Note</button>
         <button class="btn btn-xs btn-danger-ghost" onclick="unmarkKnownFromRow('${a.id}')">Unmark</button>
         <button class="btn btn-xs btn-expand" onclick="toggleRow('${a.id}')">${isExpanded ? "▲ Less" : "▼ Details"}</button>
-      </td>
+      </div></td>
     </tr>
     ${isExpanded ? expandedRowWorsening(a, fp) : ""}
   `;
@@ -585,7 +580,7 @@ function worseningAlertRow(a) {
 function expandedRowWorsening(a, fp) {
   return `
     <tr class="expand-row">
-      <td colspan="10">
+      <td colspan="8">
         <div class="expand-panel">
           <div class="expand-grid">
             <div class="expand-block">
@@ -640,12 +635,11 @@ function resolvedAlertRow(a) {
       <td class="text-muted">${a.lastSeen}</td>
       <td>${a.resolutionNotes}</td>
       <td class="text-muted">${a.knownIssueId ? `<span class="ki-badge">${a.knownIssueId}</span>` : "—"}</td>
-      <td class="action-btns">
+      <td><div class="action-btns">
         <button class="btn btn-xs btn-warning" onclick="reopenAlert('${a.id}')">Reopen</button>
         <button class="btn btn-xs btn-ghost" onclick="showToast('Archive (placeholder)')">Archive</button>
-        <button class="btn btn-xs btn-ghost" onclick="showToast('View History (placeholder)')">History</button>
         <button class="btn btn-xs btn-expand" onclick="toggleRow('${a.id}')">${isExpanded ? "▲ Less" : "▼ Details"}</button>
-      </td>
+      </div></td>
     </tr>
     ${isExpanded ? expandedRowResolved(a, fp) : ""}
   `;

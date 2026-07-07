@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from typing import Optional
 
 from backend.database.db import SessionLocal
 from backend.services.config import ENABLE_PROM_WATCHER, PROM_POLL_SECONDS
@@ -7,7 +8,7 @@ from backend.services.prom_ingestor import process_prom_file
 
 _LOG = logging.getLogger(__name__)
 
-watcher_task: asyncio.Task | None = None
+watcher_task: Optional[asyncio.Task] = None
 
 
 def _run_prom_process() -> None:
