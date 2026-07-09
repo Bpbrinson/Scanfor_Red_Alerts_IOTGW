@@ -1,0 +1,1250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Scanfor Red — Project Documentation</title>
+<style>
+  /* ── Print & screen base ─────────────────────────────────────────────── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-size: 13px;
+    line-height: 1.7;
+    color: #1a1d2e;
+    background: #fff;
+    padding: 0;
+  }
+
+  /* ── Page layout ─────────────────────────────────────────────────────── */
+  .page {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 56px 64px;
+  }
+
+  @media print {
+    body { font-size: 11.5px; }
+    .page { max-width: 100%; padding: 28px 36px; }
+    .page-break { page-break-before: always; }
+    a { color: inherit; text-decoration: none; }
+    .no-print { display: none; }
+    pre, code { font-size: 10px; }
+  }
+
+  /* ── Cover ───────────────────────────────────────────────────────────── */
+  .cover {
+    display: flex;
+    flex-direction: column;
+    min-height: 320px;
+    border-bottom: 3px solid #e84040;
+    padding-bottom: 32px;
+    margin-bottom: 36px;
+  }
+  .cover-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 40px;
+  }
+  .cover-dot {
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    background: #e84040;
+    flex-shrink: 0;
+  }
+  .cover-title { font-size: 28px; font-weight: 700; color: #0d0f1a; }
+  .cover-title span { color: #e84040; }
+  .cover-subtitle { font-size: 15px; color: #5a5f7a; margin-top: 4px; }
+  .cover-meta { margin-top: auto; font-size: 12px; color: #8a8fa8; }
+  .cover-meta strong { color: #1a1d2e; }
+
+  /* ── Typography ──────────────────────────────────────────────────────── */
+  h1 { font-size: 22px; font-weight: 700; color: #0d0f1a; margin: 40px 0 10px; border-bottom: 2px solid #e84040; padding-bottom: 6px; }
+  h2 { font-size: 16px; font-weight: 700; color: #0d0f1a; margin: 28px 0 8px; }
+  h3 { font-size: 13.5px; font-weight: 600; color: #2a3050; margin: 18px 0 6px; }
+  p  { margin: 8px 0; color: #2a2e45; }
+  ul, ol { margin: 8px 0 8px 20px; color: #2a2e45; }
+  li { margin: 4px 0; }
+  strong { color: #0d0f1a; }
+
+  /* ── Code blocks ─────────────────────────────────────────────────────── */
+  code {
+    font-family: "SF Mono", "Fira Code", Consolas, monospace;
+    font-size: 11.5px;
+    background: #f0f2f8;
+    border: 1px solid #d5d9e8;
+    border-radius: 4px;
+    padding: 1px 5px;
+    color: #c0392b;
+  }
+  pre {
+    background: #0d0f1a;
+    color: #c8cce8;
+    border-radius: 8px;
+    padding: 16px 20px;
+    overflow-x: auto;
+    margin: 12px 0;
+    border-left: 3px solid #e84040;
+  }
+  pre code {
+    background: none;
+    border: none;
+    padding: 0;
+    color: #c8cce8;
+    font-size: 11.5px;
+  }
+
+  /* ── Tables ──────────────────────────────────────────────────────────── */
+  table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 12px; }
+  thead th { background: #0d0f1a; color: #c8cce8; text-align: left; padding: 8px 12px; font-weight: 600; }
+  tbody td { padding: 7px 12px; border-bottom: 1px solid #e0e4f0; vertical-align: top; }
+  tbody tr:nth-child(even) { background: #f8f9fc; }
+
+  /* ── Callout boxes ───────────────────────────────────────────────────── */
+  .callout {
+    border-radius: 6px;
+    padding: 12px 16px;
+    margin: 14px 0;
+    border-left: 4px solid;
+  }
+  .callout-info  { background: #eef4ff; border-color: #4b8ef0; }
+  .callout-warn  { background: #fff8ee; border-color: #f0901e; }
+  .callout-sec   { background: #fff0f0; border-color: #e84040; }
+  .callout-good  { background: #eefff5; border-color: #38c07a; }
+  .callout-title { font-weight: 700; margin-bottom: 4px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; }
+  .callout-info  .callout-title { color: #2b6bd6; }
+  .callout-warn  .callout-title { color: #c07010; }
+  .callout-sec   .callout-title { color: #b82020; }
+  .callout-good  .callout-title { color: #1a9050; }
+
+  /* ── Section divider ─────────────────────────────────────────────────── */
+  .section-rule { border: none; border-top: 1px solid #e0e4f0; margin: 32px 0; }
+
+  /* ── Badge ───────────────────────────────────────────────────────────── */
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 10.5px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .badge-red  { background: #fde8e8; color: #b82020; border: 1px solid rgba(184,32,32,0.25); }
+  .badge-blue { background: #e8f0fe; color: #2b6bd6; border: 1px solid rgba(43,107,214,0.25); }
+  .badge-org  { background: #fff3e0; color: #c07010; border: 1px solid rgba(192,112,16,0.25); }
+  .badge-grn  { background: #e8f8ef; color: #1a9050; border: 1px solid rgba(26,144,80,0.25); }
+
+  /* ── TOC ─────────────────────────────────────────────────────────────── */
+  .toc { background: #f4f6fc; border: 1px solid #d5d9e8; border-radius: 8px; padding: 20px 28px; margin: 20px 0 36px; }
+  .toc h2 { margin-top: 0; border: none; font-size: 14px; }
+  .toc ol { margin-left: 18px; }
+  .toc li { margin: 5px 0; }
+  .toc a { color: #2b6bd6; }
+
+  /* ── Step list ───────────────────────────────────────────────────────── */
+  .steps { counter-reset: step; list-style: none; margin-left: 0; }
+  .steps li {
+    counter-increment: step;
+    position: relative;
+    padding-left: 38px;
+    margin: 16px 0;
+  }
+  .steps li::before {
+    content: counter(step);
+    position: absolute;
+    left: 0; top: 0;
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    background: #e84040;
+    color: #fff;
+    font-weight: 700;
+    font-size: 11px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+  }
+
+  /* ── Print button ────────────────────────────────────────────────────── */
+  .print-btn {
+    position: fixed;
+    bottom: 28px; right: 28px;
+    background: #e84040;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 12px 22px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 4px 16px rgba(232,64,64,0.35);
+    z-index: 999;
+  }
+  .print-btn:hover { background: #c83030; }
+
+  /* ── Page break helper ───────────────────────────────────────────────── */
+  .page-break { border: none; border-top: 2px dashed #e0e4f0; margin: 48px 0; }
+  @media print {
+    .page-break { border: none; margin: 0; }
+  }
+
+  /* ── Arch diagram ────────────────────────────────────────────────────── */
+  .arch {
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    background: #f4f6fc;
+    border: 1px solid #d5d9e8;
+    border-radius: 8px;
+    overflow: hidden;
+    margin: 16px 0;
+    font-size: 12px;
+  }
+  .arch-box {
+    flex: 1;
+    padding: 14px 16px;
+    border-right: 1px solid #d5d9e8;
+  }
+  .arch-box:last-child { border-right: none; }
+  .arch-box h4 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: #8a8fa8; margin-bottom: 6px; }
+  .arch-box ul { margin: 0; padding-left: 14px; }
+  .arch-box li { margin: 2px 0; color: #2a2e45; }
+  .arch-arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px;
+    font-size: 18px;
+    color: #e84040;
+    flex-shrink: 0;
+    background: #fdf0f0;
+    border-right: 1px solid #f5d5d5;
+  }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+<!-- ══════════════════════════════════════════════════════════════════════
+     COVER
+═══════════════════════════════════════════════════════════════════════ -->
+<div class="cover">
+  <div class="cover-logo">
+    <div class="cover-dot"></div>
+    <span style="font-size:20px;font-weight:800;color:#0d0f1a"><span style="color:#e84040">Scanfor</span> Red</span>
+  </div>
+  <div class="cover-title">Alert Triage Dashboard</div>
+  <div class="cover-subtitle">Complete Project Documentation — Developer Reference &amp; Onboarding Guide</div>
+  <div class="cover-meta" style="margin-top:32px">
+    <p><strong>Version:</strong> Phase 4 (Production-Ready)</p>
+    <p><strong>Stack:</strong> Python 3.9 · FastAPI · SQLAlchemy · SQLite · Vanilla JS</p>
+    <p><strong>Author:</strong> bpbrinson &nbsp;·&nbsp; <strong>Date:</strong> July 2026</p>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════════
+     TABLE OF CONTENTS
+═══════════════════════════════════════════════════════════════════════ -->
+<div class="toc">
+  <h2>Table of Contents</h2>
+  <ol>
+    <li><a href="#overview">Project Overview — What This Is and Why It Exists</a></li>
+    <li><a href="#architecture">System Architecture — The Big Picture</a></li>
+    <li><a href="#data-flow">End-to-End Data Flow</a></li>
+    <li><a href="#prom-files">Understanding .prom Files</a></li>
+    <li><a href="#alert-lifecycle">Alert Lifecycle — New → Known → Worsening → Resolved</a></li>
+    <li><a href="#fingerprinting">Fingerprinting — How Alerts Are Matched to Known Issues</a></li>
+    <li><a href="#backend">The Backend (FastAPI + Python)</a></li>
+    <li><a href="#database">The Database (SQLite + SQLAlchemy)</a></li>
+    <li><a href="#frontend">The Frontend (Vanilla HTML/CSS/JS)</a></li>
+    <li><a href="#file-structure">Complete File Structure</a></li>
+    <li><a href="#api-reference">API Endpoint Reference</a></li>
+    <li><a href="#security">Security Considerations</a></li>
+    <li><a href="#faq">Developer FAQ</a></li>
+    <li><a href="#ops">Operations — Start, Stop, Logs, Reset</a></li>
+    <li style="margin-top:10px;font-weight:700;color:#e84040"><a href="#cron-setup">APPENDIX A: Cron Job Setup (Automated .prom Processing)</a></li>
+  </ol>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════════════════
+     1. OVERVIEW
+═══════════════════════════════════════════════════════════════════════ -->
+<h1 id="overview">1. Project Overview</h1>
+
+<h2>What Problem Does This Solve?</h2>
+<p>
+  The IoTGW (Internet of Things Gateway) platform runs on dozens of servers across multiple
+  environments. Every 10 minutes, a monitoring tool called <strong>Scanfor</strong> scans
+  application log files on each server and counts how many times specific error patterns
+  appear. These counts are written to <code>.prom</code> files (Prometheus-format metric files).
+</p>
+<p>
+  Without this dashboard, an on-call engineer would have to manually SSH into servers,
+  read raw log files or metric files, and decide whether each error is new, expected,
+  getting worse, or has gone away. At scale — dozens of servers, hundreds of potential
+  error types — this is slow, error-prone, and exhausting.
+</p>
+
+<div class="callout callout-info">
+  <div class="callout-title">The Solution</div>
+  <p>
+    Scanfor Red automatically reads the .prom files, compares them to a catalog of
+    <strong>Known Issues</strong>, classifies every alert into one of four categories,
+    and presents everything in a web dashboard that any engineer can read at a glance.
+    No SSH required.
+  </p>
+</div>
+
+<h2>The Four Alert Categories</h2>
+<table>
+  <thead><tr><th>Category</th><th>Badge</th><th>Meaning</th><th>Action Required</th></tr></thead>
+  <tbody>
+    <tr><td><strong>New / Unknown</strong></td><td><span class="badge badge-red">NEW</span></td><td>Error pattern has no match in the Known Issues catalog</td><td>Investigate immediately</td></tr>
+    <tr><td><strong>Known</strong></td><td><span class="badge badge-blue">KNOWN</span></td><td>Matches a known issue and count/growth is within normal range</td><td>Monitor per runbook</td></tr>
+    <tr><td><strong>Worsening</strong></td><td><span class="badge badge-org">WORSENING</span></td><td>Matches a known issue but count or growth exceeds the normal threshold</td><td>Escalate — runbook first step</td></tr>
+    <tr><td><strong>Resolved</strong></td><td><span class="badge badge-grn">RESOLVED</span></td><td>Was present in the previous snapshot but is gone now</td><td>Verify, then archive</td></tr>
+  </tbody>
+</table>
+
+<hr class="section-rule" />
+
+
+<!-- ══════════════════════════════════════════════════════════════════════
+     2. ARCHITECTURE
+═══════════════════════════════════════════════════════════════════════ -->
+<h1 id="architecture">2. System Architecture</h1>
+
+<div class="arch">
+  <div class="arch-box">
+    <h4>Production Servers</h4>
+    <ul>
+      <li>IoTGW app servers</li>
+      <li>Scanfor tool runs every 10 min</li>
+      <li>Writes <code>*.prom</code> files</li>
+      <li>Path: <code>/home/plmon/status/scanfor/</code></li>
+    </ul>
+  </div>
+  <div class="arch-arrow">→</div>
+  <div class="arch-box">
+    <h4>Cron Job (every 10 min)</h4>
+    <ul>
+      <li><code>backend/cron_ingest.py</code></li>
+      <li>Parses .prom files</li>
+      <li>Computes growth</li>
+      <li>Classifies alerts</li>
+      <li>Writes to SQLite DB</li>
+    </ul>
+  </div>
+  <div class="arch-arrow">→</div>
+  <div class="arch-box">
+    <h4>FastAPI Backend</h4>
+    <ul>
+      <li>Port 9000</li>
+      <li>Reads from SQLite DB</li>
+      <li>Serves REST API</li>
+      <li>Serves frontend files</li>
+      <li><code>backend/main.py</code></li>
+    </ul>
+  </div>
+  <div class="arch-arrow">→</div>
+  <div class="arch-box">
+    <h4>Browser Dashboard</h4>
+    <ul>
+      <li>Vanilla JS + HTML</li>
+      <li>Fetches from <code>/api/*</code></li>
+      <li>4 alert sections</li>
+      <li>Known Issues catalog</li>
+      <li>Falls back to mock data</li>
+    </ul>
+  </div>
+</div>
+
+<p>
+  Everything runs on the <strong>same server</strong>. The browser connects to
+  <code>http://&lt;server-ip&gt;:9000</code>, which is served by the FastAPI process.
+  Because the frontend and API share the same origin (same host, same port), there are
+  no cross-origin (CORS) issues.
+</p>
+
+<hr class="section-rule" />
+
+
+<!-- ══════════════════════════════════════════════════════════════════════
+     3. END-TO-END DATA FLOW
+═══════════════════════════════════════════════════════════════════════ -->
+<h1 id="data-flow">3. End-to-End Data Flow</h1>
+
+<h2>Step-by-step: what happens every 10 minutes</h2>
+<ol class="steps">
+  <li>
+    <strong>Scanfor writes .prom files.</strong> The Scanfor tool (already running on the
+    production server) scans log files and writes one <code>.prom</code> file per host into
+    <code>/home/plmon/status/scanfor/</code>. Each file contains rows of error counts for
+    that host. Files are completely overwritten — not appended.
+  </li>
+  <li>
+    <strong>Cron job fires.</strong> The OS cron scheduler runs
+    <code>python3 -m backend.cron_ingest</code>. This is the only process that reads the
+    .prom files. It runs independently of the FastAPI web server.
+  </li>
+  <li>
+    <strong>Folder hash check.</strong> The ingestor computes a SHA-256 hash of all .prom
+    file contents combined. If the hash matches the last successful snapshot in the database,
+    the run exits immediately — <em>nothing is written</em>. This prevents duplicate batches
+    when files haven't changed.
+  </li>
+  <li>
+    <strong>Parsing.</strong> Each <code>.prom</code> file is parsed line by line. Comment
+    lines (starting with <code>#</code>) are skipped. Data lines are parsed into structured
+    records: hostname, filename, error_type, count, plus metadata labels.
+  </li>
+  <li>
+    <strong>Growth calculation.</strong> For each parsed alert, the ingestor looks up the
+    most recent snapshot in the database that has an alert with the same fingerprint.
+    <code>growth = current_count − previous_count</code>. On the very first run, previous
+    count is 0, so growth equals the current count.
+  </li>
+  <li>
+    <strong>Classification.</strong> Each alert is passed through the classifier along with
+    the full Known Issues catalog fetched from the database. The classifier returns a
+    category (new/known/worsening) based on fingerprint matching and threshold comparison.
+  </li>
+  <li>
+    <strong>Resolution detection.</strong> Any alert that was <em>active</em> in the previous
+    snapshot but is <em>absent</em> in the current snapshot is automatically marked
+    <code>resolved</code> and written to the new batch.
+  </li>
+  <li>
+    <strong>Database write.</strong> One <code>AlertBatch</code> row and N
+    <code>AlertEvent</code> rows are committed to SQLite. A <code>PromSnapshot</code> row
+    records the file hash and metadata for idempotency.
+  </li>
+  <li>
+    <strong>Dashboard refresh.</strong> The next time any user clicks <strong>Refresh Data</strong>
+    or reloads the page, the browser fetches from <code>/api/alerts</code>, which reads
+    the latest batch from the database and returns the newly classified alerts.
+  </li>
+</ol>
+
+<hr class="section-rule" />
+
+
+<!-- ══════════════════════════════════════════════════════════════════════
+     4. .PROM FILES
+═══════════════════════════════════════════════════════════════════════ -->
+<h1 id="prom-files">4. Understanding .prom Files</h1>
+
+<h2>What is a .prom file?</h2>
+<p>
+  A <code>.prom</code> file is a text file that follows the
+  <strong>Prometheus exposition format</strong> — a standard way to expose numeric metrics.
+  Each line describes one metric measurement. You do not need to know anything about
+  Prometheus to understand this project; the format is just structured text.
+</p>
+
+<h2>File Naming</h2>
+<p>
+  One file per server. The filename identifies which server produced it:
+</p>
+<pre><code>cars-cars1-plmon-scanfor.prom
+chne-vm1-plmon-scanfor.prom
+cbmw-bmw1-plmon-scanfor.prom</code></pre>
+
+<h2>File Contents — Anatomy of a .prom file</h2>
+<pre><code># HELP scanfor_errors Total errors matching scanfor patterns
+# TYPE scanfor_errors gauge
+# Generated: 2026-07-01 08:55:37
+# State file: /tmp/scanfor_state_cars_cars1_2026-06-30.dat
+scanfor_errors{system_type="IotGW",system="cars",hostname="cars-cars1-plmon-scanfor",
+               tenant="cars",filename="commandlistener-main.20260630",
+               error_type="SQLException",error_index="11",color="red",
+               known_error="false",note="",caused_by="TelemetryDao.java:231"} 13</code></pre>
+
+<h3>Breaking it down field by field</h3>
+<table>
+  <thead><tr><th>Field</th><th>Example</th><th>What It Means</th></tr></thead>
+  <tbody>
+    <tr><td><code>system_type</code></td><td>IotGW</td><td>Type of platform — always IotGW in this project</td></tr>
+    <tr><td><code>system</code></td><td>cars</td><td>Tenant system code (cars, chne, cbmw, etc.)</td></tr>
+    <tr><td><code>hostname</code></td><td>cars-cars1-plmon-scanfor</td><td>Full hostname of the server that produced this metric</td></tr>
+    <tr><td><code>tenant</code></td><td>cars</td><td>Tenant/customer identifier</td></tr>
+    <tr><td><code>filename</code></td><td>commandlistener-main.20260630</td><td>Log file scanned — includes a date suffix (YYYYMMDD)</td></tr>
+    <tr><td><code>error_type</code></td><td>SQLException</td><td>The error pattern Scanfor found in the log</td></tr>
+    <tr><td><code>error_index</code></td><td>11</td><td>Position of this error in Scanfor's pattern list</td></tr>
+    <tr><td><code>color</code></td><td>red / yellow / black</td><td>Scanfor severity hint: red=high, yellow=medium, black=low</td></tr>
+    <tr><td><code>known_error</code></td><td>true / false</td><td>Whether Scanfor itself flagged this as a known pattern</td></tr>
+    <tr><td><code>caused_by</code></td><td>TelemetryDao.java:231</td><td>Java class and line number that caused the error (optional)</td></tr>
+    <tr><td><em>value (last number)</em></td><td>13</td><td>The total error count since the state file was created</td></tr>
+  </tbody>
+</table>
+
+<div class="callout callout-warn">
+  <div class="callout-title">Important: Counts Are Cumulative</div>
+  <p>
+    The count value is the <strong>total</strong> since the state file was created, not
+    since the last 10-minute window. Growth (the increase since the last scan) is computed
+    by the ingestor by comparing to the previous snapshot in the database.
+  </p>
+</div>
+
+<hr class="section-rule" />
+
+
+<!-- ══════════════════════════════════════════════════════════════════════
+     5. ALERT LIFECYCLE
+════════════���══════════════════════════════════════════════════════════ -->
+<h1 id="alert-lifecycle">5. Alert Lifecycle</h1>
+
+<h2>Classification Logic</h2>
+<p>
+  Every alert goes through this decision tree each time a new .prom snapshot is processed:
+</p>
+
+<pre><code>Does the alert's fingerprint match any Known Issue in the catalog?
+│
+├─ NO  ──→  Category = NEW / UNKNOWN
+│           Severity inferred from count/growth
+│           Action: "Investigate {error_type} on {hostname}"
+│
+└─ YES ──→  Is growth > 0  AND  (count > normal_max  OR  growth > normal_max)?
+            │
+            ├─ YES ──→  Category = WORSENING
+            │           Severity escalated one level (low→medium, medium→high, etc.)
+            │           Action: First line of Known Issue resolution_steps
+            │
+            └─ NO  ──→  Category = KNOWN
+                        Severity from Known Issue record
+                        Action: First line of Known Issue resolution_steps</code></pre>
+
+<h2>Resolution Logic</h2>
+<p>
+  After processing current alerts, the ingestor compares the new set of fingerprints against
+  the previous snapshot. Any alert that was active before but is missing now gets a new
+  <code>resolved</code> event written with <code>count = 0</code>.
+</p>
+
+<div class="callout callout-info">
+  <div class="callout-title">Note on Worsening vs. Known</div>
+  <p>
+    A high count with zero growth does <strong>not</strong> classify as worsening — it stays
+    as "known." Worsening requires actual upward movement (<code>growth &gt; 0</code>).
+    This prevents stable-but-high errors from flooding the worsening section.
+  </p>
+</div>
+
+<hr class="section-rule" />
+
+
+<!-- ══════════════════════════════════════════════════════════════════════
+     6. FINGERPRINTING
+═══════════════════════════════════════════════════════════════════════ -->
+<h1 id="fingerprinting">6. Fingerprinting — How Alerts Match Known Issues</h1>
+
+<p>
+  A fingerprint is a short string that uniquely identifies an alert pattern independent of
+  daily dates and server node numbers. It allows the same recurring error to be matched to
+  the same Known Issue every day across any server in a host group.
+</p>
+
+<h2>Fingerprint Format</h2>
+<pre><code>env | hostPrefix | logScope | errorType
+
+Examples:
+  prod | mxqrpiog | listener-main | SQLException
+  prod | ccgw-eastus2-prod | *server-main | javax_net_ssl</code></pre>
+
+<h2>Normalization Rules</h2>
+<table>
+  <thead><tr><th>Input</th><th>After Normalization</th><th>Rule</th></tr></thead>
+  <tbody>
+    <tr><td><code>cars-cars1-plmon-scanfor</code></td><td><code>cars-cars1-plmon-scanfor</code></td><td>Host prefix = strip trailing digit run</td></tr>
+    <tr><td><code>mxqrpiog02</code></td><td><code>mxqrpiog</code></td><td>Trailing "02" stripped</td></tr>
+    <tr><td><code>ccgw-eastus2-prod-ford-vm-01</code></td><td><code>ccgw-eastus2-prod-ford</code></td><td><code>-vm-01</code> suffix stripped</td></tr>
+    <tr><td><code>listener-main.20260630</code></td><td><code>listener-main</code></td><td>Date suffix <code>.YYYYMMDD</code> stripped</td></tr>
+    <tr><td><code>hostname with "staging"</code></td><td><code>env = staging</code></td><td>Env extracted from hostname keywords</td></tr>
+  </tbody>
+</table>
+
+<p>
+  The Known Issues catalog stores fingerprint <em>patterns</em> with wildcards (e.g.,
+  <code>*server-main</code> matches <code>commandserver-main</code>, <code>authserver-main</code>, etc.).
+  The classifier first tries exact fingerprint matching, then falls back to scope-based matching
+  (host_scope, log_scope, error_type fields on the Known Issue record).
+</p>
+
+<hr class="section-rule" />
+
+
+<!-- ══════════════════════════════════════════════════════════════════════
+     7. BACKEND
+═══════════════════════════════════════════════════════════════════════ -->
+<h1 id="backend">7. The Backend (FastAPI + Python)</h1>
+
+<h2>What is FastAPI?</h2>
+<p>
+  FastAPI is a modern Python web framework that makes it easy to build REST APIs.
+  Think of it like Express.js for Python. It runs via <strong>Uvicorn</strong>, which is the
+  web server that actually listens on port 9000. FastAPI also auto-generates interactive
+  API documentation at <code>http://localhost:9000/docs</code>.
+</p>
+
+<h2>Key Backend Files</h2>
+<table>
+  <thead><tr><th>File</th><th>Purpose</th></tr></thead>
+  <tbody>
+    <tr><td><code>backend/main.py</code></td><td>App entry point. Registers all routes, adds CORS, mounts the frontend as static files, starts the background watcher on startup.</td></tr>
+    <tr><td><code>backend/routes/alerts.py</code></td><td>All <code>/api/alerts/*</code> endpoints — list, filter, mark-known, add-note, update-status.</td></tr>
+    <tr><td><code>backend/routes/known_issues.py</code></td><td>CRUD for the Known Issues catalog.</td></tr>
+    <tr><td><code>backend/routes/prom.py</code></td><td>Endpoints for .prom status, file listing, manual trigger, and snapshot history.</td></tr>
+    <tr><td><code>backend/routes/summary.py</code></td><td>Dashboard summary counts (total, new, known, worsening, resolved, highest growth).</td></tr>
+    <tr><td><code>backend/services/classifier.py</code></td><td>The classification engine. Accepts alert data + known issues list and returns category + reason.</td></tr>
+    <tr><td><code>backend/services/fingerprint.py</code></td><td>Builds fingerprints. Shared by classifier, ingestor, and the JS frontend.</td></tr>
+    <tr><td><code>backend/services/prom_parser.py</code></td><td>Parses raw .prom file text into Python dicts.</td></tr>
+    <tr><td><code>backend/services/prom_ingestor.py</code></td><td>Full ingestion pipeline: parse → growth → classify → resolve → write to DB.</td></tr>
+    <tr><td><code>backend/services/config.py</code></td><td>All configuration via environment variables with sane defaults.</td></tr>
+    <tr><td><code>backend/cron_ingest.py</code></td><td>Standalone script for cron. Calls the ingestor directly without needing HTTP.</td></tr>
+  </tbody>
+</table>
+
+<h2>How the Backend Serves the Frontend</h2>
+<p>
+  FastAPI uses its <code>StaticFiles</code> feature to serve the <code>index.html</code> and
+  all <code>js/</code> and <code>css/</code> files directly from the project root directory.
+  This means <strong>one process on port 9000</strong> handles both the API and the web page.
+  There is no separate web server (no Nginx, no Apache) required for development.
+</p>
+<pre><code># In backend/main.py:
+app.mount("/", StaticFiles(directory=project_root, html=True), name="frontend")</code></pre>
+
+<hr class="section-rule" />
+
+
+<!-- ══════════════════════════════════════════════════════════════════════
+     8. DATABASE
+═══════════════════════════════════════════════════════════════════════ -->
+<h1 id="database">8. The Database (SQLite + SQLAlchemy)</h1>
+
+<h2>What is SQLite?</h2>
+<p>
+  SQLite is a database engine that stores everything in <strong>one file</strong>:
+  <code>backend/database/scanfor_red.db</code>. There is no separate database server to
+  install, configure, or connect to. The Python process reads and writes the file directly.
+  It is ideal for single-server internal tools like this dashboard.
+</p>
+
+<h2>What is SQLAlchemy?</h2>
+<p>
+  SQLAlchemy is the Python library used to talk to the database. Instead of writing raw SQL
+  queries like <code>SELECT * FROM alert_events</code>, you write Python like
+  <code>db.query(AlertEvent).filter(...).all()</code>. SQLAlchemy translates this to SQL.
+  The table definitions are in <code>backend/database/models.py</code>.
+</p>
+
+<h2>Database Schema — 7 Tables</h2>
+<table>
+  <thead><tr><th>Table</th><th>Purpose</th><th>Key Columns</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><code>alert_batches</code></td>
+      <td>One row per ingestion run</td>
+      <td>batch_id, source, environment, received_time, total_issues_detected</td>
+    </tr>
+    <tr>
+      <td><code>alert_events</code></td>
+      <td>One row per alert per batch</td>
+      <td>alert_id, batch_id, category, hostname, log_file, error_type, count, growth, severity, fingerprint, known_issue_id</td>
+    </tr>
+    <tr>
+      <td><code>known_issues</code></td>
+      <td>The KI catalog — defines what "normal" looks like</td>
+      <td>known_issue_id, fingerprint, host_scope, log_scope, error_type, normal_count_max, normal_growth_max, cause, resolution_steps</td>
+    </tr>
+    <tr>
+      <td><code>alert_notes</code></td>
+      <td>Triage notes attached to alerts</td>
+      <td>alert_event_id (FK), note, created_by</td>
+    </tr>
+    <tr>
+      <td><code>issue_status_history</code></td>
+      <td>Audit log of manual status changes</td>
+      <td>alert_event_id (FK), old_status, new_status, changed_by, change_reason</td>
+    </tr>
+    <tr>
+      <td><code>prom_snapshots</code></td>
+      <td>Tracks each .prom folder read for idempotency</td>
+      <td>snapshot_id, batch_id, file_hash, total_files, total_metrics, status</td>
+    </tr>
+    <tr>
+      <td><code>prom_snapshot_files</code></td>
+      <td>One row per .prom file per snapshot</td>
+      <td>snapshot_id (FK), filename, file_hash, metric_count, generated_time</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>Database Commands</h2>
+<pre><code># Create tables and seed with sample data (run once on first setup):
+python3 -m backend.database.init_db
+
+# Reset everything and reseed (destroys all existing data):
+python3 -m backend.database.init_db --reset
+
+# View database location:
+ls -lh backend/database/scanfor_red.db</code></pre>
+
+<hr class="section-rule" />
+
+
+<!-- ══════════════════════════════════════════════════════════════════════
+     9. FRONTEND
+═══════════════════════════════════════════════════════════════════════ -->
+<h1 id="frontend">9. The Frontend (Vanilla HTML/CSS/JS)</h1>
+
+<h2>No Build Step — Zero Dependencies</h2>
+<p>
+  The frontend is pure HTML, CSS, and JavaScript. There is no React, Vue, Webpack, npm,
+  or Node.js. Any browser can run it. This was an intentional decision to keep the project
+  simple and deployable without a build pipeline.
+</p>
+
+<h2>Frontend File Roles</h2>
+<table>
+  <thead><tr><th>File</th><th>Role</th></tr></thead>
+  <tbody>
+    <tr><td><code>index.html</code></td><td>The single HTML page. Contains the table structure for all four alert sections. Loads scripts in the correct order.</td></tr>
+    <tr><td><code>css/styles.css</code></td><td>All visual styling. Dark theme by default; light mode toggled with a class on <code>&lt;body&gt;</code>.</td></tr>
+    <tr><td><code>js/app.js</code></td><td>Entry point. Loads data on startup, wires up the Refresh button and "Process .prom Folder Now" button.</td></tr>
+    <tr><td><code>js/api.js</code></td><td>All HTTP calls to the backend. Transforms snake_case API responses to camelCase for the frontend.</td></tr>
+    <tr><td><code>js/dataStore.js</code></td><td>Central in-memory store (STORE object). All render functions read from here — never directly from the API.</td></tr>
+    <tr><td><code>js/dashboard.js</code></td><td>Renders the main triage view: summary cards, filter bar, all four alert section tables.</td></tr>
+    <tr><td><code>js/knownIssues.js</code></td><td>Renders the Known Issues Catalog tab and the detail modal.</td></tr>
+    <tr><td><code>js/fingerprint.js</code></td><td>JavaScript version of the fingerprint logic (mirrors the Python version in <code>backend/services/fingerprint.py</code>).</td></tr>
+    <tr><td><code>js/mockAlerts.js</code></td><td>Hardcoded sample alert data. Used as fallback when the API is unreachable.</td></tr>
+    <tr><td><code>js/mockKnownIssues.js</code></td><td>Hardcoded sample known issues. Also used as fallback.</td></tr>
+  </tbody>
+</table>
+
+<h2>The Mock Data Fallback</h2>
+<p>
+  When <code>app.js</code> tries to load data from the API and the fetch fails (backend not
+  running, network error, etc.), it automatically calls <code>populateStoreFromMock()</code>
+  instead. This populates the STORE with the hardcoded mock data, and an orange warning
+  banner appears at the top of the page explaining that you're seeing mock data.
+</p>
+<p>
+  This means developers can open <code>index.html</code> in a browser without starting the
+  backend and still see a functional-looking dashboard for UI testing.
+</p>
+
+<hr class="section-rule" />
+
+
+<!-- ══════════════════════════════════════════════════════════════════════
+     10. FILE STRUCTURE
+═══════════════════════════════════════════════════════════════════════ -->
+<h1 id="file-structure">10. Complete File Structure</h1>
+
+<pre><code>Scanfor_Red_Email_Alerts_Dashboard/
+│
+├── index.html                      ← The web app (single page)
+├── requirements.txt                ← Python dependencies
+│
+├── css/
+│   └── styles.css                  ← All visual styling
+│
+├── js/
+│   ├── app.js                      ← Entry point, data loading, routing
+│   ├── api.js                      ← HTTP calls to backend API
+│   ├── dataStore.js                ← In-memory data store (STORE object)
+│   ├── dashboard.js                ← Renders alert triage sections
+│   ├── knownIssues.js              ← Renders Known Issues catalog tab
+│   ├── fingerprint.js              ← Alert fingerprint logic (JS mirror)
+│   ├── mockAlerts.js               ← Sample alert data (API fallback)
+│   └── mockKnownIssues.js          ← Sample KI data (API fallback)
+│
+├── backend/
+│   ├── main.py                     ← FastAPI app, route registration, startup
+│   ├── cron_ingest.py              ← Standalone script for OS cron job
+│   │
+│   ├── routes/
+│   │   ├── alerts.py               ← /api/alerts/* endpoints
+│   │   ├── known_issues.py         ← /api/known-issues/* endpoints
+│   │   ├── alert_batches.py        ← /api/alert-batches/* endpoints
+│   │   ├── summary.py              ← /api/summary endpoint
+│   │   ├── prom.py                 ← /api/prom/* endpoints
+│   │   └── health.py               ← /api/health endpoint
+│   │
+│   ├── services/
+│   │   ├── classifier.py           ← Alert classification engine
+│   │   ├── fingerprint.py          ← Fingerprint builder
+│   │   ├── config.py               ← All env-var configuration
+│   │   ├── prom_parser.py          ← .prom file text parser
+│   │   ├── prom_ingestor.py        ← Full ingestion pipeline
+│   │   ├── prom_inventory.py       ← .prom file listing utilities
+│   │   └── prom_watcher.py         ← Optional in-process async watcher
+│   │
+│   ├── database/
+│   │   ├── db.py                   ← SQLAlchemy engine + session factory
+│   │   ├── models.py               ← ORM table definitions (7 tables)
+│   │   ├── schemas.py              ← Pydantic request/response models
+│   │   ├── init_db.py              ← Table creation + seeding script
+│   │   └── seed_data.py            ← Sample data for development
+│   │
+│   └── data/
+│       ├── mock_alerts.py          ← Python mock alert data
+│       └── mock_known_issues.py    ← Python mock known issues
+│
+├── test_data/                      ← Sample .prom files for local testing
+│   ├── cars-cars1-plmon-scanfor.prom
+│   ├── chne-vm1-plmon-scanfor.prom
+│   └── ... (24 files total)
+│
+└── backend/database/
+    └── scanfor_red.db              ← SQLite database (created on first run)</code></pre>
+
+<hr class="section-rule" />
+
+
+<!-- ══════════════════════════════════════════════════════════════════════
+     11. API REFERENCE
+═══════════════════════════════════════════════════════════════════════ -->
+<h1 id="api-reference">11. API Endpoint Reference</h1>
+
+<p>All endpoints are prefixed with <code>/api</code>. Interactive docs: <code>http://localhost:9000/docs</code></p>
+
+<table>
+  <thead><tr><th>Method</th><th>Path</th><th>Description</th></tr></thead>
+  <tbody>
+    <tr><td>GET</td><td><code>/api/health</code></td><td>Simple health check — returns <code>{"status":"ok"}</code></td></tr>
+    <tr><td>GET</td><td><code>/api/summary</code></td><td>Dashboard summary counts (new, known, worsening, resolved, highest growth)</td></tr>
+    <tr><td>GET</td><td><code>/api/alert-batches/latest</code></td><td>Metadata for the most recent alert batch</td></tr>
+    <tr><td>GET</td><td><code>/api/alerts</code></td><td>All alerts from latest batch. Filters: <code>?category=new&severity=high&hostname=cars1</code></td></tr>
+    <tr><td>POST</td><td><code>/api/alerts/{id}/notes</code></td><td>Add a triage note to an alert</td></tr>
+    <tr><td>PATCH</td><td><code>/api/alerts/{id}/status</code></td><td>Manually change alert status/category</td></tr>
+    <tr><td>POST</td><td><code>/api/alerts/{id}/mark-known</code></td><td>Link alert to a Known Issue (creates new KI if needed)</td></tr>
+    <tr><td>PATCH</td><td><code>/api/alerts/{id}/ticket</code></td><td>Attach a ticket number or link to an alert</td></tr>
+    <tr><td>GET</td><td><code>/api/known-issues</code></td><td>Full Known Issues catalog</td></tr>
+    <tr><td>POST</td><td><code>/api/known-issues</code></td><td>Create a new Known Issue</td></tr>
+    <tr><td>PUT</td><td><code>/api/known-issues/{id}</code></td><td>Update an existing Known Issue</td></tr>
+    <tr><td>PATCH</td><td><code>/api/known-issues/{id}/archive</code></td><td>Archive a Known Issue (removes from classification)</td></tr>
+    <tr><td>GET</td><td><code>/api/prom/status</code></td><td>Current .prom folder path, last snapshot info, watcher state</td></tr>
+    <tr><td>GET</td><td><code>/api/prom/files</code></td><td>List all .prom files in the configured folder</td></tr>
+    <tr><td>POST</td><td><code>/api/prom/process</code></td><td>Manually trigger a .prom folder ingest (same as "Process .prom Folder Now" button)</td></tr>
+    <tr><td>GET</td><td><code>/api/prom/snapshots</code></td><td>History of all prom snapshots</td></tr>
+  </tbody>
+</table>
+
+<hr class="section-rule" />
+
+
+<!-- ══════════════════════════════════════════════════════════════════════
+     12. SECURITY
+═══════════════════════════════════════════════════════════════════════ -->
+<h1 id="security">12. Security Considerations</h1>
+
+<div class="callout callout-sec">
+  <div class="callout-title">This is an Internal Tool</div>
+  <p>
+    Scanfor Red is designed for use on an internal network or VPN. It does not have user
+    authentication. Do not expose port 9000 directly to the public internet.
+  </p>
+</div>
+
+<h2>What Data Is Stored?</h2>
+<p>
+  The SQLite database contains:
+</p>
+<ul>
+  <li>Error type names and counts (e.g., <code>SQLException: 144</code>)</li>
+  <li>Hostnames of production servers</li>
+  <li>Log file names</li>
+  <li>Triage notes entered by engineers</li>
+</ul>
+<p>
+  It does <strong>not</strong> contain:
+  customer data, PII, passwords, secrets, API keys, or the actual contents of log files.
+  The .prom files themselves only contain aggregate counts, not log content.
+</p>
+
+<h2>Network Exposure</h2>
+<table>
+  <thead><tr><th>Concern</th><th>Current Behavior</th><th>Recommendation</th></tr></thead>
+  <tbody>
+    <tr><td>Port exposure</td><td>FastAPI listens on 0.0.0.0:9000 when started with <code>--host 0.0.0.0</code></td><td>Bind to <code>127.0.0.1</code> and put Nginx in front if wider access is needed. Use VPN or firewall rules.</td></tr>
+    <tr><td>Authentication</td><td>None</td><td>Add HTTP Basic Auth via Nginx or a FastAPI middleware if the network is not trusted.</td></tr>
+    <tr><td>CORS</td><td>Allows all origins (<code>allow_origin_regex=".*"</code>)</td><td>Fine for internal tools. For production hardening, restrict to the specific server's IP/hostname.</td></tr>
+    <tr><td>SQL Injection</td><td>All queries use SQLAlchemy ORM with parameterized queries</td><td>Safe — no raw SQL string concatenation.</td></tr>
+    <tr><td>Path traversal</td><td>The .prom folder path is set via environment variable, not user input</td><td>Never accept the .prom path from user input. Keep it in the environment config.</td></tr>
+  </tbody>
+</table>
+
+<h2>File System Permissions</h2>
+<pre><code># Recommended permissions on the SQLite database:
+chmod 640 backend/database/scanfor_red.db
+
+# Recommended permissions on the .prom source folder (read-only is sufficient):
+# The cron job and ingestor only READ from /home/plmon/status/scanfor
+# They never write to it.</code></pre>
+
+<h2>What Is Intentionally NOT Connected</h2>
+<ul>
+  <li>Gmail / Outlook — no email integration</li>
+  <li>Jira / Labtrack — no ticket system integration (links are stored as plain text only)</li>
+  <li>External notification services (Slack, PagerDuty, etc.)</li>
+  <li>Real customer data sources</li>
+</ul>
+
+<hr class="section-rule" />
+
+
+<!-- ══════════════════════════════════════════════════════════════════════
+     13. FAQ
+═══════════════════════════════════════════════════════════════════════ -->
+<h1 id="faq">13. Developer FAQ</h1>
+
+<h3>Q: Why SQLite instead of PostgreSQL or MySQL?</h3>
+<p>
+  SQLite requires zero installation and configuration. The database is a single file on disk.
+  For a single-server internal tool processing a few dozen alerts every 10 minutes, SQLite
+  is completely appropriate and far simpler to operate. If the project grows to need multiple
+  app servers sharing a database, migrating to PostgreSQL would be straightforward using the
+  same SQLAlchemy models.
+</p>
+
+<h3>Q: Why does the backend serve the frontend? Isn't that wrong?</h3>
+<p>
+  For a simple internal tool, having one process serve everything is fine. It eliminates
+  CORS headaches (frontend and API are the same origin) and simplifies deployment (one
+  process to start/stop). If you want to separate them later, remove the
+  <code>StaticFiles</code> mount from <code>main.py</code> and deploy the frontend via Nginx.
+</p>
+
+<h3>Q: Why vanilla JS? No React/Vue?</h3>
+<p>
+  No build pipeline means no npm, no Node.js version management, no webpack configuration.
+  A developer can clone the repo, install Python dependencies with pip, and have the app
+  running in under 5 minutes. The dashboard re-renders by rebuilding table HTML as strings
+  via template literals — simple and debuggable in any browser's DevTools.
+</p>
+
+<h3>Q: What happens if the .prom folder is unavailable when cron runs?</h3>
+<p>
+  The ingestor raises a <code>FileNotFoundError</code>, the cron script logs an error message
+  and exits with code 2. The database is not modified. The dashboard continues serving
+  the previous snapshot's data unchanged.
+</p>
+
+<h3>Q: What happens if two cron jobs run at the same time?</h3>
+<p>
+  The folder hash check prevents duplicates. If the files haven't changed, the second run
+  exits immediately with "skipped." If files changed between the two runs, both will attempt
+  to write — SQLite's WAL mode handles concurrent writes safely for this workload.
+</p>
+
+<h3>Q: Can I add more .prom fields without breaking things?</h3>
+<p>
+  Yes. The parser in <code>prom_parser.py</code> reads all label key-value pairs. Adding new
+  labels to the .prom files will simply result in them being stored in the
+  <code>alert_events</code> table columns that match (if the column exists) or silently
+  ignored (if not). Add a new column to the model and a migration step if needed.
+</p>
+
+<h3>Q: How do I add a new Known Issue?</h3>
+<p>
+  Two ways: (1) Click the "Known Issues" tab in the dashboard and use the Add button.
+  (2) POST to <code>/api/known-issues</code> with the JSON body. The new KI will be used
+  in classification on the next ingest run.
+</p>
+
+<h3>Q: The dashboard shows "mock data" warning. What's wrong?</h3>
+<p>
+  The backend is not running. Start it with:
+  <code>python3 -m uvicorn backend.main:app --reload --port 9000</code> from the project
+  root, then reload the page.
+</p>
+
+<h3>Q: How do I see what's in the database without a GUI tool?</h3>
+<pre><code>python3 -c "
+from backend.database.db import SessionLocal
+from backend.database.models import AlertEvent, AlertBatch, KnownIssue
+from sqlalchemy import func
+db = SessionLocal()
+print('Batches:', db.query(AlertBatch).count())
+print('Events:', db.query(AlertEvent).count())
+rows = db.query(AlertEvent.category, func.count()).group_by(AlertEvent.category).all()
+for cat, n in rows: print(f'  {cat}: {n}')
+db.close()
+"</code></pre>
+
+<h3>Q: How do I reset the database for a clean start?</h3>
+<pre><code>python3 -m backend.database.init_db --reset</code></pre>
+
+<hr class="section-rule" />
+
+
+<!-- ══════════════════════════════════════════════════════════════════════
+     14. OPERATIONS
+═══════════════════════════════════════════════════════════════════════ -->
+<h1 id="ops">14. Operations Reference</h1>
+
+<table>
+  <thead><tr><th>Task</th><th>Command</th></tr></thead>
+  <tbody>
+    <tr><td>Start (dev, auto-reload)</td><td><code>python3 -m uvicorn backend.main:app --reload --port 9000</code></td></tr>
+    <tr><td>Start (server, background)</td><td><code>nohup python3 -m uvicorn backend.main:app --host 0.0.0.0 --port 9000 &gt; /var/log/scanfor_red.log 2&gt;&amp;1 &amp;</code></td></tr>
+    <tr><td>Stop (foreground)</td><td><code>Ctrl+C</code></td></tr>
+    <tr><td>Stop (background, by port)</td><td><code>lsof -ti :9000 | xargs kill</code></td></tr>
+    <tr><td>Is it running?</td><td><code>lsof -i :9000</code> or <code>curl http://localhost:9000/api/health</code></td></tr>
+    <tr><td>View app logs (background)</td><td><code>tail -f /var/log/scanfor_red.log</code></td></tr>
+    <tr><td>View cron logs</td><td><code>tail -f /var/log/scanfor_cron.log</code></td></tr>
+    <tr><td>Init DB (first time)</td><td><code>python3 -m backend.database.init_db</code></td></tr>
+    <tr><td>Reset DB</td><td><code>python3 -m backend.database.init_db --reset</code></td></tr>
+    <tr><td>Manual .prom ingest</td><td><code>python3 -m backend.cron_ingest</code></td></tr>
+    <tr><td>Manual ingest via API</td><td><code>curl -s -X POST http://localhost:9000/api/prom/process | python3 -m json.tool</code></td></tr>
+    <tr><td>Install dependencies</td><td><code>pip3 install -r requirements.txt</code></td></tr>
+    <tr><td>Open dashboard (local)</td><td><code>http://localhost:9000</code></td></tr>
+    <tr><td>Interactive API docs</td><td><code>http://localhost:9000/docs</code></td></tr>
+  </tbody>
+</table>
+
+
+<!-- ══════════════════════════════════════════════════════════════════════
+     PAGE BREAK — CRON APPENDIX
+═══════════════════════════════════════════════════════════════════════ -->
+<div class="page-break"></div>
+
+
+<!-- ══════════════════════════════════════════════════════════════════════
+     APPENDIX A: CRON JOB SETUP
+═══════════════════════════════════════════════════════════════════════ -->
+<h1 id="cron-setup" style="margin-top:40px">Appendix A: Automated .prom Processing — Cron Job Setup</h1>
+
+<div class="callout callout-info">
+  <div class="callout-title">What This Does</div>
+  <p>
+    This setup automates the <strong>"Process .prom Folder Now"</strong> button so that the
+    dashboard automatically refreshes with new alert data every 10 minutes — exactly matching
+    how often Scanfor writes new .prom files. Engineers can also still trigger a manual
+    update at any time using the button or a single command.
+  </p>
+</div>
+
+<h2>Overview</h2>
+<p>
+  The script <code>backend/cron_ingest.py</code> does all the work:
+</p>
+<ul>
+  <li>Reads all <code>*.prom</code> files from the configured folder</li>
+  <li>Computes growth by comparing to the previous snapshot</li>
+  <li>Classifies each alert (new / known / worsening / resolved)</li>
+  <li>Writes a new batch to the SQLite database</li>
+  <li>Skips silently if the files haven't changed since the last run</li>
+</ul>
+<p>
+  It runs <strong>independently of the FastAPI web server</strong>. Even if the web server
+  is restarting or temporarily down, cron continues ingesting data.
+</p>
+
+<hr class="section-rule" />
+
+<h2>Prerequisites</h2>
+<ul>
+  <li>The app is checked out on the server at a known absolute path (e.g., <code>/opt/scanfor-red</code>)</li>
+  <li>Python 3.9+ is available at <code>python3</code> (or use a full path like <code>/usr/bin/python3</code>)</li>
+  <li>Dependencies are installed: <code>pip3 install -r requirements.txt</code></li>
+  <li>The database has been initialized: <code>python3 -m backend.database.init_db</code></li>
+  <li>The .prom source folder exists: <code>/home/plmon/status/scanfor</code></li>
+</ul>
+
+<hr class="section-rule" />
+
+<h2>Step-by-Step Setup</h2>
+
+<ol class="steps">
+  <li>
+    <strong>Find the full path to your project directory.</strong><br />
+    You need the absolute path (not a relative one) for cron.
+    <pre><code>cd /path/to/Scanfor_Red_Email_Alerts_Dashboard
+pwd
+# Example output: /opt/scanfor-red</code></pre>
+    Use whatever path <code>pwd</code> shows in all steps below.
+  </li>
+
+  <li>
+    <strong>Test the script manually first.</strong><br />
+    Run it exactly as cron will run it, using absolute paths and environment variables:
+    <pre><code>cd /opt/scanfor-red
+SCANFOR_PROM_FILE_PATH=/home/plmon/status/scanfor python3 -m backend.cron_ingest</code></pre>
+    You should see output like:
+    <pre><code>2026-07-01 09:10:00 INFO processed — files=18 metrics=71 new_events=71 resolved=0 batch=PROM-20260701-091000-45204f</code></pre>
+    Or on a second run (when files haven't changed):
+    <pre><code>2026-07-01 09:10:05 INFO skipped — folder unchanged (hash=45204fc31036)</code></pre>
+    If you see an error, fix it before continuing.
+  </li>
+
+  <li>
+    <strong>Create the log file so cron can write to it.</strong>
+    <pre><code>sudo touch /var/log/scanfor_cron.log
+sudo chmod 644 /var/log/scanfor_cron.log
+
+# If you don't have sudo access, use a path in your home directory instead:
+touch ~/logs/scanfor_cron.log</code></pre>
+  </li>
+
+  <li>
+    <strong>Open the crontab editor.</strong>
+    <pre><code>crontab -e</code></pre>
+    This opens your personal cron file in your system's default editor
+    (usually <code>vi</code> or <code>nano</code>).
+    <br /><br />
+    <em>To use nano instead of vi:</em>
+    <pre><code>EDITOR=nano crontab -e</code></pre>
+  </li>
+
+  <li>
+    <strong>Add the cron entry at the bottom of the file.</strong><br />
+    Replace <code>/opt/scanfor-red</code> with your actual project path:
+    <pre><code># Scanfor Red — process .prom folder every 10 minutes
+*/10 * * * * cd /opt/scanfor-red && SCANFOR_PROM_FILE_PATH=/home/plmon/status/scanfor python3 -m backend.cron_ingest >> /var/log/scanfor_cron.log 2>&1</code></pre>
+
+    <div class="callout callout-warn" style="margin-top:12px">
+      <div class="callout-title">crontab Format Reminder</div>
+      <p>The five fields before the command are: <code>minute  hour  day-of-month  month  day-of-week</code><br />
+      <code>*/10 * * * *</code> = "every 10 minutes, every hour, every day"</p>
+    </div>
+
+    Save and exit the editor. In nano: <code>Ctrl+O</code> → Enter → <code>Ctrl+X</code>. In vi: <code>:wq</code>
+  </li>
+
+  <li>
+    <strong>Verify the crontab was saved correctly.</strong>
+    <pre><code>crontab -l</code></pre>
+    You should see your entry listed.
+  </li>
+
+  <li>
+    <strong>Wait for the next 10-minute mark, then check the log.</strong>
+    <pre><code>tail -f /var/log/scanfor_cron.log</code></pre>
+    You should see a new log line appear at :00, :10, :20, :30, :40, :50 of each hour.
+    Press <code>Ctrl+C</code> to stop watching.
+  </li>
+
+  <li>
+    <strong>Confirm data appeared in the dashboard.</strong><br />
+    Open the dashboard in your browser and click <strong>Refresh Data</strong>. The batch
+    timestamp at the top should update to within the last 10 minutes.
+  </li>
+</ol>
+
+<hr class="section-rule" />
+
+<h2>Triggering a Manual Update</h2>
+
+<p>You have three ways to trigger an immediate update outside of the cron schedule:</p>
+
+<h3>Option 1 — Dashboard Button (easiest)</h3>
+<p>
+  Click the <strong>"Process .prom Folder Now"</strong> button in the top-right corner of
+  the dashboard. The page will show a status message and auto-refresh the data.
+</p>
+
+<h3>Option 2 — Command line</h3>
+<pre><code>cd /opt/scanfor-red
+SCANFOR_PROM_FILE_PATH=/home/plmon/status/scanfor python3 -m backend.cron_ingest</code></pre>
+
+<h3>Option 3 — API call (curl)</h3>
+<pre><code>curl -s -X POST http://localhost:9000/api/prom/process | python3 -m json.tool</code></pre>
+<p>
+  This is equivalent to clicking the button. Useful for scripting or triggering from
+  another system.
+</p>
+
+<hr class="section-rule" />
+
+<h2>Configuration Reference</h2>
+
+<p>All behavior is controlled through environment variables. Set them in the cron entry or in a shell profile file:</p>
+
+<table>
+  <thead><tr><th>Variable</th><th>Default</th><th>Description</th></tr></thead>
+  <tbody>
+    <tr><td><code>SCANFOR_PROM_FILE_PATH</code></td><td><em>project/test_data/</em></td><td>Absolute path to the folder containing .prom files. On the server: <code>/home/plmon/status/scanfor</code></td></tr>
+    <tr><td><code>SCANFOR_PROM_POLL_SECONDS</code></td><td>600</td><td>Poll interval for the built-in watcher (if enabled). Not used by cron.</td></tr>
+    <tr><td><code>SCANFOR_ENABLE_PROM_WATCHER</code></td><td>false</td><td>Set to <code>true</code> to enable the built-in async watcher instead of cron. Pick one approach, not both.</td></tr>
+  </tbody>
+</table>
+
+<hr class="section-rule" />
+
+<h2>Troubleshooting</h2>
+
+<table>
+  <thead><tr><th>Symptom</th><th>Cause</th><th>Fix</th></tr></thead>
+  <tbody>
+    <tr>
+      <td>No log output after 10 minutes</td>
+      <td>Cron not running, or cron daemon not started</td>
+      <td>Check: <code>crontab -l</code> to confirm entry exists. On macOS: cron is enabled by default. On Linux: <code>systemctl status cron</code> or <code>systemctl status crond</code></td>
+    </tr>
+    <tr>
+      <td><code>ModuleNotFoundError: No module named 'backend'</code></td>
+      <td>Python can't find the project modules — working directory is wrong</td>
+      <td>Make sure the cron entry has <code>cd /opt/scanfor-red &&</code> before the python command</td>
+    </tr>
+    <tr>
+      <td><code>prom path not found</code></td>
+      <td><code>SCANFOR_PROM_FILE_PATH</code> points to a path that doesn't exist</td>
+      <td>Verify: <code>ls /home/plmon/status/scanfor</code>. Check spelling and that the directory exists on this server.</td>
+    </tr>
+    <tr>
+      <td>Log shows "skipped" every run</td>
+      <td>.prom files not being updated by Scanfor, or path points to wrong directory</td>
+      <td>Check that Scanfor is running on the server. Verify file modification times: <code>ls -lt /home/plmon/status/scanfor/*.prom</code></td>
+    </tr>
+    <tr>
+      <td>Dashboard not updating after cron runs</td>
+      <td>Data IS in the DB but browser is showing cached data</td>
+      <td>Click <strong>Refresh Data</strong> in the dashboard, or hard-reload (<code>Cmd+Shift+R</code> / <code>Ctrl+Shift+R</code>)</td>
+    </tr>
+    <tr>
+      <td><code>OperationalError: database is locked</code></td>
+      <td>Two processes writing to SQLite simultaneously</td>
+      <td>Rare with 10-minute intervals. If cron takes more than 10 min, prevent overlap: add <code>flock -n /tmp/scanfor_cron.lock</code> before the python command</td>
+    </tr>
+  </tbody>
+</table>
+
+<hr class="section-rule" />
+
+<h2>Removing the Cron Job</h2>
+<pre><code># Remove all cron entries for your user (CAREFUL — removes everything):
+crontab -r
+
+# Or edit and remove just the Scanfor line:
+crontab -e</code></pre>
+
+<hr class="section-rule" />
+
+<div class="callout callout-good" style="margin-top: 32px;">
+  <div class="callout-title">You're All Set</div>
+  <p>
+    With cron running every 10 minutes, the dashboard will always reflect the latest state
+    of your production servers within one polling cycle. Engineers can open the dashboard
+    at any time and see current alert data — no manual steps required.
+  </p>
+  <p style="margin-top:8px">
+    For questions or issues, check the log file first:
+    <code>tail -50 /var/log/scanfor_cron.log</code>
+  </p>
+</div>
+
+</div><!-- /page -->
+
+<button class="print-btn no-print" onclick="window.print()">⬇ Save as PDF</button>
+
+</body>
+</html>
