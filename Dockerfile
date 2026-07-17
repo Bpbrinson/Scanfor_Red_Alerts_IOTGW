@@ -18,12 +18,15 @@ COPY backend ./backend
 COPY css ./css
 COPY js ./js
 COPY index.html ./index.html
+COPY alembic.ini ./alembic.ini
 
 RUN mkdir -p /data
 ENV SCANFOR_DB_PATH=/data/scanfor_red.db \
     SCANFOR_PROM_FILE_PATH=/prom \
     SCANFOR_PROM_POLL_SECONDS=60 \
-    SCANFOR_ENABLE_PROM_WATCHER=false
+    SCANFOR_ENABLE_PROM_WATCHER=false \
+    SCANFOR_ACTIONABLE_COLORS=red,yellow \
+    SCANFOR_SUPPRESS_KNOWN_ERRORS=true
 
 EXPOSE 9000
 

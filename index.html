@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Scanfor Red — Alert Triage Dashboard</title>
-  <link rel="stylesheet" href="css/styles.css?v=17" />
+  <link rel="stylesheet" href="css/styles.css?v=20" />
 </head>
 <body>
 
@@ -67,6 +67,7 @@
                 <th>Error Type</th>
                 <th>Count</th>
                 <th>Growth</th>
+                <th>Scan Δ</th>
                 <th>Suggested Action</th>
                 <th>Actions</th>
               </tr>
@@ -94,7 +95,7 @@
                 <th>Error Type</th>
                 <th>Count</th>
                 <th>Growth</th>
-                <th>Known Issue ID</th>
+                <th>Scan Δ</th>
                 <th>Ticket</th>
                 <th>Actions</th>
               </tr>
@@ -123,10 +124,67 @@
                 <th>Normal Range</th>
                 <th>Current Count</th>
                 <th>Growth</th>
+                <th>Scan Δ</th>
                 <th>Actions</th>
               </tr>
             </thead>
             <tbody id="tbody-worsening"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Section: Suppressed (known errors excluded from the main view) -->
+      <div class="section-panel section-muted section-suppressed" id="section-suppressed">
+        <div class="section-header" onclick="toggleAuditSection('suppressed')" role="button" tabindex="0">
+          <span class="section-icon" id="caret-suppressed">▼</span>
+          <span class="section-title">Suppressed</span>
+          <span class="section-count count-suppressed" id="count-suppressed"></span>
+          <span class="section-desc">Known errors suppressed from the main view — retained, not deleted. Click to expand.</span>
+        </div>
+        <div class="table-scroll" id="body-suppressed" style="display:none">
+          <table>
+            <thead>
+              <tr>
+                <th>Signal</th>
+                <th>Hostname</th>
+                <th>Log File</th>
+                <th>Error Type</th>
+                <th>Color</th>
+                <th>Known Error</th>
+                <th>Count</th>
+                <th>Growth</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-suppressed"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Section: Noise (non-actionable colors) -->
+      <div class="section-panel section-muted section-noise" id="section-noise">
+        <div class="section-header" onclick="toggleAuditSection('noise')" role="button" tabindex="0">
+          <span class="section-icon" id="caret-noise">▼</span>
+          <span class="section-title">Noise</span>
+          <span class="section-count count-noise" id="count-noise"></span>
+          <span class="section-desc">Non-actionable colors — retained for audit and possible future reclassification. Click to expand.</span>
+        </div>
+        <div class="table-scroll" id="body-noise" style="display:none">
+          <table>
+            <thead>
+              <tr>
+                <th>Signal</th>
+                <th>Hostname</th>
+                <th>Log File</th>
+                <th>Error Type</th>
+                <th>Color</th>
+                <th>Known Error</th>
+                <th>Count</th>
+                <th>Growth</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-noise"></tbody>
           </table>
         </div>
       </div>
@@ -217,10 +275,10 @@
 <script src="js/mockAlerts.js?v=15"></script>
 <script src="js/mockKnownIssues.js?v=15"></script>
 <script src="js/fingerprint.js?v=15"></script>
-<script src="js/dataStore.js?v=15"></script>
+<script src="js/dataStore.js?v=16"></script>
 <script src="js/promStatus.js?v=15"></script>
-<script src="js/api.js?v=15"></script>
-<script src="js/dashboard.js?v=17"></script>
+<script src="js/api.js?v=18"></script>
+<script src="js/dashboard.js?v=24"></script>
 <script src="js/knownIssues.js?v=15"></script>
 <script src="js/app.js?v=15"></script>
 

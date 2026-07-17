@@ -1,0 +1,379 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Scanfor Red — 10-Phase Overhaul: Plain-Language Overview</title>
+<style>
+  @page { size: Letter; margin: 20mm 16mm; }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+    color: #1c1e21;
+    font-size: 11.5px;
+    line-height: 1.55;
+    max-width: 100%;
+  }
+  h1 { font-size: 23px; margin: 0 0 4px; color: #111; }
+  .subtitle { font-size: 13px; color: #555; margin-bottom: 2px; }
+  .meta { font-size: 10px; color: #888; margin-bottom: 6px; }
+  .intro {
+    margin: 14px 0 22px;
+    font-size: 11.5px;
+    color: #333;
+  }
+  .legend {
+    display: flex;
+    gap: 14px;
+    margin: 10px 0 20px;
+    font-size: 10px;
+  }
+  .legend-item { display: flex; align-items: center; gap: 5px; }
+  .swatch { display: inline-block; width: 10px; height: 10px; border-radius: 2px; }
+
+  .phase {
+    border: 1px solid #ddd;
+    border-left: 5px solid #a4231f;
+    border-radius: 5px;
+    padding: 14px 16px 12px;
+    margin: 0 0 16px;
+    page-break-inside: avoid;
+  }
+  .phase.done { border-left-color: #1f8a4c; }
+  .phase.planned { border-left-color: #8a6d1f; }
+
+  .phase-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 6px;
+  }
+  .phase-title { font-size: 15px; font-weight: 700; color: #111; }
+  .phase-num { color: #a4231f; font-weight: 800; }
+  .phase.done .phase-num { color: #1f8a4c; }
+  .phase.planned .phase-num { color: #8a6d1f; }
+
+  .status-tag {
+    display: inline-block;
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    padding: 3px 8px;
+    border-radius: 10px;
+    white-space: nowrap;
+  }
+  .status-done { background: #dff3e6; color: #1f8a4c; }
+  .status-planned { background: #f7edd6; color: #8a6d1f; }
+
+  .simple {
+    font-size: 11.5px;
+    margin: 4px 0 10px;
+    padding: 8px 10px;
+    background: #fafafa;
+    border-radius: 4px;
+    color: #222;
+  }
+  .simple b { color: #a4231f; }
+  .phase.done .simple b { color: #1f8a4c; }
+  .phase.planned .simple b { color: #8a6d1f; }
+
+  .detail-label {
+    font-size: 9.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #888;
+    margin: 6px 0 3px;
+  }
+  ul.detail { margin: 0 0 4px; padding-left: 18px; }
+  ul.detail li { margin: 2px 0; }
+  code {
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+    background: #f2f2f2;
+    padding: 1px 4px;
+    border-radius: 3px;
+    font-size: 10px;
+  }
+  .tests-line {
+    font-size: 10px;
+    color: #666;
+    margin-top: 8px;
+    font-style: italic;
+  }
+  .section-break { page-break-before: always; }
+  .footer-note {
+    margin-top: 24px;
+    padding-top: 10px;
+    border-top: 1px solid #ddd;
+    font-size: 10px;
+    color: #888;
+  }
+</style>
+</head>
+<body>
+
+<h1>Scanfor Red — Reset-Aware Identity, Trends &amp; Data-Quality Overhaul</h1>
+<div class="subtitle">Plain-language overview of all 10 phases</div>
+<div class="meta">Prepared for review before continuing to Phase 5 &middot; Scanfor Red Alert Triage Dashboard</div>
+
+<div class="intro">
+  This project is being delivered as ten separate, reviewable phases rather than one large change.
+  Phases 1&ndash;4 are implemented, tested, and running live. Phases 5&ndash;10 are designed but not
+  yet built. Each phase below gets a one- or two-sentence plain explanation, followed by a slightly
+  more detailed breakdown of what actually changes.
+</div>
+
+<div class="legend">
+  <div class="legend-item"><span class="swatch" style="background:#1f8a4c"></span> Done &amp; verified</div>
+  <div class="legend-item"><span class="swatch" style="background:#8a6d1f"></span> Planned, not started</div>
+</div>
+
+<!-- PHASE 1 -->
+<div class="phase done">
+  <div class="phase-head">
+    <div class="phase-title"><span class="phase-num">Phase 1</span> — Stable Identity, Real Migrations &amp; Reset-Safe Counters</div>
+    <span class="status-tag status-done">Done</span>
+  </div>
+  <div class="simple">
+    <b>In plain terms:</b> Give every alert a permanent "identity" that survives the daily log
+    rollover, switch schema changes to a real migration tool instead of ad-hoc code, and stop
+    treating a daily counter reset as if the problem suddenly got 100x better.
+  </div>
+  <div class="detail-label">In more detail</div>
+  <ul class="detail">
+    <li>New <code>AlertSeries</code> table holds the permanent, editable identity for one alert (owner,
+      ticket, notes, known-issue link) &mdash; <code>AlertEvent</code> stays an immutable snapshot from one scan.</li>
+    <li>Adopted <b>Alembic</b> for schema changes, replacing the old pattern of ad-hoc <code>ALTER TABLE</code>
+      code that ran on every app startup.</li>
+    <li>New <code>counter_math.py</code> detects when the source counter has reset (new day, new log file,
+      or count suddenly dropping) and reports the correct "new errors since last scan" instead of a
+      huge negative number.</li>
+    <li>Each source file now gets its own observed timestamp instead of one shared "generated time" for
+      the whole folder (real files can be 15&ndash;20 minutes apart).</li>
+    <li>Added a processing lock and SQLite WAL mode so the background watcher and the manual "Process Now"
+      button can never double-write data.</li>
+  </ul>
+  <div class="tests-line">90 tests passing &middot; verified against real production data and a real copy of the database.</div>
+</div>
+
+<!-- PHASE 2 -->
+<div class="phase done">
+  <div class="phase-head">
+    <div class="phase-title"><span class="phase-num">Phase 2</span> — Prevent False Resolutions &amp; Bad Data</div>
+    <span class="status-tag status-done">Done</span>
+  </div>
+  <div class="simple">
+    <b>In plain terms:</b> Don't mark an alert "resolved" just because one scan happened to miss it or a
+    source file broke &mdash; and stop silently accepting malformed or duplicate data rows.
+  </div>
+  <div class="detail-label">In more detail</div>
+  <ul class="detail">
+    <li>Every source file now gets a quality rating each scan: <code>ok</code>, <code>parse_warning</code>,
+      <code>stale</code> (stopped updating), or <code>parse_failure</code> (unreadable).</li>
+    <li>Every scan gets an overall rating too: <code>complete</code>, <code>partial</code> (some files
+      missing/broken), or <code>missing_source</code> (everything unavailable).</li>
+    <li>An alert only becomes "Resolved" after it's been genuinely absent for a configurable grace
+      period (default: 2 scans <i>and</i> 20 minutes) &mdash; not the instant it's missing once.</li>
+    <li>Rows missing required fields (hostname, tenant, etc.) are now rejected and counted instead of
+      silently stored with blank data; duplicate rows within one file are detected and only the first kept.</li>
+  </ul>
+  <div class="tests-line">95 tests passing &middot; verified by simulating missing and stale files against real data.</div>
+</div>
+
+<!-- PHASE 3 -->
+<div class="phase done">
+  <div class="phase-head">
+    <div class="phase-title"><span class="phase-num">Phase 3</span> — Rate-Based Trend Engine</div>
+    <span class="status-tag status-done">Done</span>
+  </div>
+  <div class="simple">
+    <b>In plain terms:</b> This is the core fix the whole project exists for &mdash; the dashboard's trend
+    math was still using the raw daily counter, so it still broke every midnight even after Phase 1
+    fixed the underlying data. Now it uses the corrected numbers, a statistically sound baseline, and a
+    much richer vocabulary for describing what's happening.
+  </div>
+  <div class="detail-label">In more detail</div>
+  <ul class="detail">
+    <li>All trend math (1-hour change, 6-hour slope, acceleration) now runs on the reset-safe numbers
+      from Phase 1, not the raw counter &mdash; verified a midnight rollover no longer corrupts the numbers.</li>
+    <li>New "robust baseline" uses the statistical median instead of an average, so one freak spike
+      can't drag the definition of "normal" upward.</li>
+    <li>Replaced the old 12-state trend vocabulary with 14 states requested by the spec &mdash;
+      <code>accelerating</code>, <code>worsening_rapidly</code>, <code>spike</code>,
+      <code>worsening_steadily</code>, <code>slow_growth</code>, <code>cooling</code>, <code>resolving</code>,
+      <code>persistent</code>, <code>stable</code>, <code>data_unavailable</code>, and more.</li>
+    <li>An alert whose source data is missing/broken (Phase 2) now correctly shows
+      <code>data_unavailable</code> instead of a misleading trend guess.</li>
+    <li>All existing API field names were kept the same on purpose &mdash; only the numbers behind them
+      got more correct.</li>
+  </ul>
+  <div class="tests-line">105 tests passing &middot; ~20 hand-built scenarios verified one by one to nail down the exact classification rules.</div>
+</div>
+
+<!-- PHASE 4 -->
+<div class="phase done">
+  <div class="phase-head">
+    <div class="phase-title"><span class="phase-num">Phase 4</span> — Explainable Change Score</div>
+    <span class="status-tag status-done">Done</span>
+  </div>
+  <div class="simple">
+    <b>In plain terms:</b> A single 0&ndash;100 number showing how urgently an alert's behavior is
+    changing, plus an honesty check so a score based on almost no history doesn't look as trustworthy
+    as one backed by hours of real data.
+  </div>
+  <div class="detail-label">In more detail</div>
+  <ul class="detail">
+    <li>Renamed <code>growth_score</code> &rarr; <code>change_score</code> with a genuinely new formula:
+      30% short-term rate vs. baseline, 25% sustained 1-hour rate vs. baseline, 20% acceleration,
+      15% persistence, 10% how many hosts share the same error ("multi-VM spread").</li>
+    <li>New <code>change_score_confidence</code>: separately reports what percentage of that formula was
+      actually backed by real data, so a score built from one component alone is flagged as low-confidence
+      even though the number itself still looks "full scale."</li>
+    <li>Verified live: a synthetic alert seen on 5 hosts scored 40 points higher than an identical
+      single-host alert, purely from the multi-VM component.</li>
+  </ul>
+  <div class="tests-line">110 tests passing &middot; verified live through the running dashboard's API.</div>
+</div>
+
+<div class="section-break"></div>
+
+<!-- PHASE 5 -->
+<div class="phase planned">
+  <div class="phase-head">
+    <div class="phase-title"><span class="phase-num">Phase 5</span> — Known-Issue &amp; Change Audit History</div>
+    <span class="status-tag status-planned">Planned</span>
+  </div>
+  <div class="simple">
+    <b>In plain terms:</b> Keep a record of who changed what about an alert (owner, ticket, notes,
+    known-issue link, severity) and when &mdash; plus a safe "preview" before a known-issue rule change
+    gets applied broadly across the dashboard.
+  </div>
+  <div class="detail-label">In more detail</div>
+  <ul class="detail">
+    <li>New audit/change-history model: who made the change, which field, the old value, the new value,
+      the reason given, and the timestamp.</li>
+    <li>Also audits edits to known-issue matching rules and thresholds themselves, not just individual alerts.</li>
+    <li>When a known-issue rule changes, a "dry run" shows what would be reclassified before it's actually applied.</li>
+    <li>Historical observations are never deleted just because an issue gets reclassified later.</li>
+  </ul>
+</div>
+
+<!-- PHASE 6 -->
+<div class="phase planned">
+  <div class="phase-head">
+    <div class="phase-title"><span class="phase-num">Phase 6</span> — API Expansion</div>
+    <span class="status-tag status-planned">Planned</span>
+  </div>
+  <div class="simple">
+    <b>In plain terms:</b> Add the extra data and endpoints the redesigned dashboard (Phase 7) will need,
+    without breaking anything that already works today.
+  </div>
+  <div class="detail-label">In more detail</div>
+  <ul class="detail">
+    <li>The main alerts response gains: series ID, raw count, interval delta, rate/hour, rolling rates,
+      baseline, acceleration, reset-detected flag, trend state, change score + confidence + components,
+      red duration, affected VM count, source freshness, data-quality status, observed/ingested time.</li>
+    <li>New endpoint for one alert's history &mdash; enough data points for a small sparkline chart.</li>
+    <li>New "source health" endpoint: expected vs. discovered vs. missing vs. stale files, timestamp skew
+      across files, parse warnings, and the last complete/partial snapshot.</li>
+    <li>All of this uses batched queries &mdash; never one extra database query per displayed row.</li>
+  </ul>
+</div>
+
+<!-- PHASE 7 -->
+<div class="phase planned">
+  <div class="phase-head">
+    <div class="phase-title"><span class="phase-num">Phase 7</span> — Dashboard Redesign</div>
+    <span class="status-tag status-planned">Planned</span>
+  </div>
+  <div class="simple">
+    <b>In plain terms:</b> Redesign the actual screen around everything the backend now knows &mdash;
+    clearer columns, a "change pattern + score" badge, richer expandable detail, summary cards, and
+    better sorting/filtering.
+  </div>
+  <div class="detail-label">In more detail</div>
+  <ul class="detail">
+    <li>New column set: status, error, host, log/service, current daily total, new since last scan, new
+      errors/hour, change pattern + score, red duration, affected VMs, owner/ticket, actions.</li>
+    <li>Replaces the ambiguous "Growth"/"Scan &Delta;" labels with a plain badge like <code>Accelerating &middot; 86</code>.</li>
+    <li>Expanded row shows raw &amp; interval delta, rate, 30m/1h/6h/24h comparisons, baseline,
+      acceleration, score breakdown, source file/timestamp, data-quality warnings, a small sparkline,
+      known-issue match reason, and notes/owner/ticket/runbook.</li>
+    <li>New summary cards: Needs Attention, Accelerating, Spikes, Persistent, Multi-VM, Stale/Missing Sources.</li>
+    <li>Sorting/filtering by change score, trend state, confidence, source freshness, and more.</li>
+  </ul>
+</div>
+
+<!-- PHASE 8 -->
+<div class="phase planned">
+  <div class="phase-head">
+    <div class="phase-title"><span class="phase-num">Phase 8</span> — Accessibility &amp; Color Contrast</div>
+    <span class="status-tag status-planned">Planned</span>
+  </div>
+  <div class="simple">
+    <b>In plain terms:</b> Make sure the dashboard is actually readable for everyone &mdash; proper
+    contrast in both light and dark mode, and never relying on color alone to say "this is bad."
+  </div>
+  <div class="detail-label">In more detail</div>
+  <ul class="detail">
+    <li>Meet WCAG AA contrast (4.5:1 for small text, 3:1 for large text) in both themes.</li>
+    <li>Every status/trend badge gets a readable text label (and icon/shape where useful), not just a color.</li>
+    <li>Visible keyboard focus states; hover states that don't reduce contrast; muted text stays readable.</li>
+    <li>Audit tables, badges, buttons, links, form fields, and tooltips in both themes; keep red, orange,
+      yellow, green, blue, and purple visually distinct from one another.</li>
+    <li>Document the final color tokens and their tested contrast ratios.</li>
+  </ul>
+</div>
+
+<!-- PHASE 9 -->
+<div class="phase planned">
+  <div class="phase-head">
+    <div class="phase-title"><span class="phase-num">Phase 9</span> — Simulation Harness &amp; Remaining Tests</div>
+    <span class="status-tag status-planned">Planned</span>
+  </div>
+  <div class="simple">
+    <b>In plain terms:</b> Build a script that generates realistic fake "hours" of scan data (steady,
+    growing, spiking, resetting at midnight, going missing, recovering) so the dashboard's behavior can
+    be demonstrated and proven, not just asserted.
+  </div>
+  <div class="detail-label">In more detail</div>
+  <ul class="detail">
+    <li>Replay/simulation script generating a sequence of realistic 10-minute snapshots covering: stable,
+      slow growth, acceleration, spike, midnight reset, missing source, and recovery.</li>
+    <li>Used to visually demonstrate every dashboard state end-to-end, not just via unit tests.</li>
+    <li>Fills in any remaining items from the original 23-item test list not already covered by Phases 1&ndash;4
+      (for example: score confidence under insufficient history, API still working when one alert's trend
+      calculation fails).</li>
+  </ul>
+</div>
+
+<!-- PHASE 10 -->
+<div class="phase planned">
+  <div class="phase-head">
+    <div class="phase-title"><span class="phase-num">Phase 10</span> — Documentation</div>
+    <span class="status-tag status-planned">Planned</span>
+  </div>
+  <div class="simple">
+    <b>In plain terms:</b> Rewrite the README and add a dedicated reference document explaining how
+    identity, resets, and trends actually work now &mdash; plus a final completion report tying everything
+    together.
+  </div>
+  <div class="detail-label">In more detail</div>
+  <ul class="detail">
+    <li>README rewrite covering: data flow, stable identity, daily reset handling, source time vs.
+      ingestion time, the change-score formula, trend-state definitions, source-health rules, the
+      known-issue workflow, migration steps, environment variables, and production deployment notes.</li>
+    <li>New standalone <code>docs/TREND_AND_IDENTITY_MODEL.md</code> reference document.</li>
+    <li>Final completion report: full test count, every migration listed, all changed files summarized,
+      the trend formula explained in plain language, the midnight-reset test result shown, and an honest
+      list of assumptions/thresholds that still need tuning against real production history.</li>
+  </ul>
+</div>
+
+<div class="footer-note">
+  Scanfor Red Alert Triage Dashboard &middot; phase plan maintained at
+  <code>indexed-tinkering-frog.md</code> &middot; generated for review before Phase 5 begins.
+</div>
+
+</body>
+</html>

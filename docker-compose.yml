@@ -10,6 +10,8 @@ services:
       SCANFOR_DB_PATH: /data/scanfor_red.db
       SCANFOR_PROM_POLL_SECONDS: "60"
       SCANFOR_ENABLE_PROM_WATCHER: "false"
+      SCANFOR_ACTIONABLE_COLORS: "red,yellow"
+      SCANFOR_SUPPRESS_KNOWN_ERRORS: "true"
     volumes:
       # Bind-mount the .prom source folder read-only.
       # Override SCANFOR_PROM_SOURCE to point at a different source folder.

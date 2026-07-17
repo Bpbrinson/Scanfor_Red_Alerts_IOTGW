@@ -13,7 +13,7 @@ Each known_issue dict/object must expose these attributes (dict-key or attr):
 """
 
 from __future__ import annotations
-from typing import Optional, List, Any
+from typing import Optional, List, Any, Set
 import re
 
 from backend.services.fingerprint import extract_env, extract_host_prefix, extract_log_scope, build_fingerprint
@@ -67,13 +67,20 @@ def _fingerprint_matches(alert_fingerprint: str, fingerprint_pattern: str) -> bo
     return all(_pattern_matches(alert_part, pattern_part) for alert_part, pattern_part in zip(alert_parts, pattern_parts))
 
 
+def _scope_specificity(ki: Any) -> int:
+    """Longer, less-wildcarded scope strings are treated as more specific."""
+    host_scope = (_get(ki, "host_scope") or "").rstrip("*")
+    log_scope = (_get(ki, "log_scope") or "").strip("*")
+    return len(host_scope) + len(log_scope)
+
+
 def find_matching_known_issue(
     hostname: str,
     log_file: str,
     error_type: str,
     known_issues: List[Any],
 ) -> Optional[Any]:
-    """Return the first known issue that matches by fingerprint or scope."""
+    """Return the known issue that matches by fingerprint, or the most specific scope match."""
     alert_fingerprint = build_fingerprint(hostname, log_file, error_type)
 
     for ki in known_issues:
@@ -86,6 +93,7 @@ def find_matching_known_issue(
         if fingerprint_pattern and _fingerprint_matches(alert_fingerprint, fingerprint_pattern):
             return ki
 
+    scope_matches = []
     for ki in known_issues:
         if ki is None:
             continue
@@ -96,9 +104,14 @@ def find_matching_known_issue(
             and _host_matches_scope(hostname, _get(ki, "host_scope") or "")
             and _log_matches_scope(log_file, _get(ki, "log_scope") or "")
         ):
-            return ki
+            scope_matches.append(ki)
 
-    return None
+    if not scope_matches:
+        return None
+    # Multiple known issues can share a wildcard scope broad enough to match the same
+    # alert (e.g. one for "cars-*" and one for "cars-cars1-*"). Prefer whichever has the
+    # more specific (least-wildcarded) scope instead of silently picking catalog order.
+    return max(scope_matches, key=_scope_specificity)
 
 
 def classify_alert(
@@ -159,6 +172,30 @@ def classify_alert(
         "suggested_action": (_get(ki, "resolution_steps") or "").split("\n")[0],
         "owner": _get(ki, "owner"),
     }
+
+
+def classify_alert_signal(
+    color: Optional[str],
+    known_error: bool,
+    actionable_colors: Set[str],
+    suppress_known_errors: bool,
+) -> str:
+    """Classify a parsed alert row as "actionable", "noise", or "suppressed".
+
+    Suppression takes precedence over color when suppress_known_errors is
+    enabled and the row is a known error. Otherwise the normalized color
+    decides actionable vs. noise. Missing, blank, or unrecognized colors are
+    treated as noise. This is a display/query concern only — it never affects
+    whether a row is stored or how it's matched across snapshots.
+    """
+    if known_error and suppress_known_errors:
+        return "suppressed"
+
+    normalized_color = (color or "").strip().lower()
+    if normalized_color in actionable_colors:
+        return "actionable"
+
+    return "noise"
 
 
 def _infer_severity(count: int, growth: int) -> str:

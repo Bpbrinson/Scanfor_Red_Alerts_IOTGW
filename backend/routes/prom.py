@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from backend.database.db import get_db
 from backend.database.models import PromSnapshot, PromSnapshotFile
 from backend.services.config import ENABLE_PROM_WATCHER, PROM_FILE_PATH, PROM_POLL_SECONDS
-from backend.services.prom_ingestor import process_prom_file
+from backend.services.prom_ingestor import ProcessAlreadyRunningError, process_prom_file
 from backend.services.prom_inventory import (
     list_configured_files,
     resolve_source_files,
@@ -94,6 +94,8 @@ def get_prom_files():
 def post_prom_process(db: Session = Depends(get_db)):
     try:
         return process_prom_file(db)
+    except ProcessAlreadyRunningError as exc:
+        raise HTTPException(status_code=409, detail=str(exc))
     except FileNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc))
     except Exception as exc:

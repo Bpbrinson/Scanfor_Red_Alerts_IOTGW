@@ -12,10 +12,92 @@ let dashFilters = {
   severity: "all",
   owner: "all",
   sort: "none",
+  trendState: "all",
+  minChangeScore: 0,
+  persistentOnly: false,
+  flappingOnly: false,
+  multiVmOnly: false,
 };
 
 // Track which rows are expanded
 const expandedRows = new Set();
+
+// ─── Trend display helpers (backend/services/trends.py) ───────────────────────
+const TREND_LABELS = {
+  data_unavailable: "Data unavailable",
+  insufficient_history: "Insufficient history",
+  new: "New",
+  spike: "Spike",
+  worsening_rapidly: "Rapidly worsening",
+  worsening_steadily: "Steadily worsening",
+  slow_growth: "Slow growth",
+  accelerating: "Accelerating",
+  persistent: "Persistent",
+  stable: "Stable",
+  cooling: "Cooling",
+  improving: "Improving",
+  resolving: "Resolving",
+  flapping: "Flapping",
+  resolved: "Resolved",
+};
+
+function formatDuration(seconds) {
+  if (seconds == null) return "—";
+  const s = Math.max(0, Math.round(seconds));
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  if (h === 0 && m === 0) return "<1m";
+  if (h === 0) return `${m}m`;
+  return `${h}h ${m}m`;
+}
+
+function fmtSigned(n, digits = 0) {
+  if (n == null) return "—";
+  const v = Number(n);
+  const sign = v > 0 ? "+" : "";
+  return `${sign}${digits ? v.toFixed(digits) : Math.round(v)}`;
+}
+
+function fmtPct(n, digits = 1) {
+  if (n == null) return "—";
+  const v = Number(n);
+  const sign = v > 0 ? "+" : "";
+  return `${sign}${v.toFixed(digits)}%`;
+}
+
+function trendBadge(a) {
+  const state = a.trendState || "insufficient_history";
+  const label = TREND_LABELS[state] || state;
+  return `<span class="trend-badge trend-${state}">${label}</span>`;
+}
+
+/**
+ * Trend detail block — appended to each section's existing expand panel
+ * (behind the "▼ Details" toggle), not shown as an always-visible row. The
+ * quick-glance numbers live in the "Scan Δ" table column instead; this panel
+ * holds the rest (1h/6h/24h changes, slopes, acceleration, threshold excess,
+ * red duration/start, flapping transitions, score breakdown).
+ */
+function trendDetailBlock(a) {
+  const comp = a.changeScoreComponents || {};
+  const fmtComp = (v) => (v == null ? "—" : Math.round(v));
+  const vmNote = (a.affectedVmCount || 0) > 1 ? ` (${a.affectedVmCount} VMs affected)` : "";
+  return `
+    <div class="expand-block">
+      <div class="expand-section-label">Trend Detail</div>
+      <div class="kv"><span class="k">Trend</span><span class="v">${trendBadge(a)}${vmNote}</span></div>
+      <div class="kv"><span class="k">1h change / Rate</span><span class="v">${fmtSigned(a.change1h)} / ${fmtSigned(a.growthRatePerHour, 1)}/hr</span></div>
+      <div class="kv"><span class="k">15m / 6h / 24h</span><span class="v">${fmtSigned(a.change15m)} / ${fmtSigned(a.change6h)} / ${fmtSigned(a.change24h)}</span></div>
+      <div class="kv"><span class="k">Slope 1h / 6h</span><span class="v">${fmtSigned(a.slope1h, 1)}/hr / ${fmtSigned(a.slope6h, 1)}/hr</span></div>
+      <div class="kv"><span class="k">Acceleration</span><span class="v">${fmtSigned(a.acceleration, 1)}</span></div>
+      <div class="kv"><span class="k">Threshold excess</span><span class="v">${fmtPct(a.thresholdExcessPercentage, 0)}</span></div>
+      <div class="kv"><span class="k">Red duration</span><span class="v">${formatDuration(a.redDurationSeconds)}${a.redStartedAt ? ` (since ${new Date(a.redStartedAt).toLocaleString()})` : ""}</span></div>
+      <div class="kv"><span class="k">Flapping transitions</span><span class="v">${a.redStateTransitionCount ?? 0}${a.isFlapping ? " (flapping)" : ""}</span></div>
+      ${a.changeScore != null ? `<div class="kv"><span class="k">Change score</span><span class="v font-bold">${a.changeScore}${a.changeScoreConfidence != null ? ` <span class="text-muted">(confidence ${Math.round(a.changeScoreConfidence)})</span>` : ""}</span></div>` : ""}
+      ${a.changeScore != null ? `<div class="kv"><span class="k">Score components</span><span class="v text-muted">short-term ${fmtComp(comp.short_term_vs_baseline)} · sustained 1h ${fmtComp(comp.sustained_1h_vs_baseline)} · accel ${fmtComp(comp.acceleration)} · persistence ${fmtComp(comp.persistence)} · multi-VM ${fmtComp(comp.multi_vm_spread)}</span></div>` : ""}
+    </div>
+  `;
+}
 
 // ─── Mark Known handler ───────────────────────────────────────────────────────
 async function markKnownFromRow(alertId) {
@@ -50,7 +132,7 @@ async function markKnownFromRow(alertId) {
   setLoading(true);
   try {
     const updated = await markAlertKnown(alertId, payload);
-    showToast(`Marked known as ${updated.known_issue_id}.`);
+    showToast("Marked known.");
     await loadData();
   } catch (err) {
     console.error(err);
@@ -249,15 +331,17 @@ function renderBatchHeader() {
 
 // ─── Summary Cards ────────────────────────────────────────────────────────────
 function renderSummaryCards() {
-  const total = STORE.allAlerts.filter((a) => a.category !== "resolved").length;
+  // newAlerts/knownAlerts/worseningAlerts are already actionable-only (dataStore.js),
+  // so these tiles naturally reflect actionable alerts by default.
+  const activeActionable = [...STORE.newAlerts, ...STORE.knownAlerts, ...STORE.worseningAlerts];
+  const total = activeActionable.length;
   const newCount = STORE.newAlerts.length;
   const knownCount = STORE.knownAlerts.length;
   const worseningCount = STORE.worseningAlerts.length;
   const resolvedCount = STORE.resolvedAlerts.length;
 
-  const allActive = STORE.allAlerts.filter((a) => a.category !== "resolved");
-  const highestGrowth = allActive.length > 0
-    ? allActive.reduce((max, a) => (a.growth > max.growth ? a : max), allActive[0])
+  const highestGrowth = activeActionable.length > 0
+    ? activeActionable.reduce((max, a) => (a.growth > max.growth ? a : max), activeActionable[0])
     : null;
 
   const el = document.getElementById("summary-cards");
@@ -330,7 +414,34 @@ function renderFilterBar() {
           <option value="none">Default Order</option>
           <option value="count-desc">Highest Count</option>
           <option value="growth-desc">Highest Growth</option>
+          <option value="change-score-desc">Highest Change Score</option>
+          <option value="prev-scan-desc">Largest Previous-Scan Increase</option>
+          <option value="1h-desc">Largest 1-Hour Increase</option>
+          <option value="rate-desc">Fastest Growth Rate</option>
+          <option value="red-duration-desc">Longest Red Duration</option>
+          <option value="vms-desc">Most Affected VMs</option>
+          <option value="newest-desc">Newest Alert</option>
         </select>
+      </div>
+      <div class="filter-group">
+        <label class="filter-label">Trend</label>
+        <select id="filter-trend" class="filter-select" onchange="onFilterChange()">
+          <option value="all">All Trends</option>
+          ${Object.entries(TREND_LABELS).map(([val, label]) => `<option value="${val}" ${dashFilters.trendState === val ? "selected" : ""}>${label}</option>`).join("")}
+        </select>
+      </div>
+      <div class="filter-group">
+        <label class="filter-label">Min Score</label>
+        <input
+          type="number" id="filter-min-score" class="filter-input" style="width:70px"
+          min="0" max="100" value="${dashFilters.minChangeScore}"
+          oninput="onFilterChange()"
+        />
+      </div>
+      <div class="filter-group filter-group-checks">
+        <label class="filter-check"><input type="checkbox" id="filter-persistent" onchange="onFilterChange()" ${dashFilters.persistentOnly ? "checked" : ""}/> Persistent</label>
+        <label class="filter-check"><input type="checkbox" id="filter-flapping" onchange="onFilterChange()" ${dashFilters.flappingOnly ? "checked" : ""}/> Flapping</label>
+        <label class="filter-check"><input type="checkbox" id="filter-multivm" onchange="onFilterChange()" ${dashFilters.multiVmOnly ? "checked" : ""}/> Multi-VM</label>
       </div>
       <button class="btn btn-ghost btn-sm" onclick="clearFilters()">Clear Filters</button>
     </div>
@@ -343,11 +454,19 @@ function onFilterChange() {
   dashFilters.severity = document.getElementById("filter-severity")?.value || "all";
   dashFilters.owner = document.getElementById("filter-owner")?.value || "all";
   dashFilters.sort = document.getElementById("filter-sort")?.value || "none";
+  dashFilters.trendState = document.getElementById("filter-trend")?.value || "all";
+  dashFilters.minChangeScore = Number(document.getElementById("filter-min-score")?.value) || 0;
+  dashFilters.persistentOnly = !!document.getElementById("filter-persistent")?.checked;
+  dashFilters.flappingOnly = !!document.getElementById("filter-flapping")?.checked;
+  dashFilters.multiVmOnly = !!document.getElementById("filter-multivm")?.checked;
   renderAllSections();
 }
 
 function clearFilters() {
-  dashFilters = { search: "", status: "all", severity: "all", owner: "all", sort: "none" };
+  dashFilters = {
+    search: "", status: "all", severity: "all", owner: "all", sort: "none",
+    trendState: "all", minChangeScore: 0, persistentOnly: false, flappingOnly: false, multiVmOnly: false,
+  };
   renderFilterBar();
   renderAllSections();
 }
@@ -373,10 +492,46 @@ function matchesSeverity(alert) {
   return alert.severity === dashFilters.severity;
 }
 
+function matchesTrendState(alert) {
+  if (dashFilters.trendState === "all") return true;
+  return alert.trendState === dashFilters.trendState;
+}
+
+function matchesMinChangeScore(alert) {
+  if (!dashFilters.minChangeScore) return true;
+  return (alert.changeScore ?? -1) >= dashFilters.minChangeScore;
+}
+
+function matchesPersistentOnly(alert) {
+  if (!dashFilters.persistentOnly) return true;
+  return alert.trendState === "persistent";
+}
+
+function matchesFlappingOnly(alert) {
+  if (!dashFilters.flappingOnly) return true;
+  return !!alert.isFlapping;
+}
+
+function matchesMultiVmOnly(alert) {
+  if (!dashFilters.multiVmOnly) return true;
+  return (alert.affectedVmCount || 0) > 1;
+}
+
 function applySortAndFilter(list) {
-  let result = list.filter((a) => matchesSearch(a) && matchesOwner(a) && matchesSeverity(a));
+  let result = list.filter((a) =>
+    matchesSearch(a) && matchesOwner(a) && matchesSeverity(a) &&
+    matchesTrendState(a) && matchesMinChangeScore(a) &&
+    matchesPersistentOnly(a) && matchesFlappingOnly(a) && matchesMultiVmOnly(a)
+  );
   if (dashFilters.sort === "count-desc") result.sort((a, b) => (b.currentCount ?? b.count ?? 0) - (a.currentCount ?? a.count ?? 0));
   if (dashFilters.sort === "growth-desc") result.sort((a, b) => (b.growth ?? 0) - (a.growth ?? 0));
+  if (dashFilters.sort === "change-score-desc") result.sort((a, b) => (b.changeScore ?? -1) - (a.changeScore ?? -1));
+  if (dashFilters.sort === "prev-scan-desc") result.sort((a, b) => (b.absoluteChange ?? -Infinity) - (a.absoluteChange ?? -Infinity));
+  if (dashFilters.sort === "1h-desc") result.sort((a, b) => (b.change1h ?? -Infinity) - (a.change1h ?? -Infinity));
+  if (dashFilters.sort === "rate-desc") result.sort((a, b) => (b.growthRatePerHour ?? -Infinity) - (a.growthRatePerHour ?? -Infinity));
+  if (dashFilters.sort === "red-duration-desc") result.sort((a, b) => (b.redDurationSeconds ?? -1) - (a.redDurationSeconds ?? -1));
+  if (dashFilters.sort === "vms-desc") result.sort((a, b) => (b.affectedVmCount ?? 0) - (a.affectedVmCount ?? 0));
+  if (dashFilters.sort === "newest-desc") result.sort((a, b) => new Date(b.firstSeen || 0) - new Date(a.firstSeen || 0));
   return result;
 }
 
@@ -397,6 +552,8 @@ function renderAllSections() {
   renderKnownSection();
   renderWorseningSection();
   renderResolvedSection();
+  renderSuppressedSection();
+  renderNoiseSection();
 
   // Update section count badges after each render
   const el = (id) => document.getElementById(id);
@@ -413,7 +570,7 @@ function renderNewSection() {
   if (!tbody) return;
 
   tbody.innerHTML = data.length === 0
-    ? `<tr><td colspan="8" class="no-results">No new issues match current filters.</td></tr>`
+    ? `<tr><td colspan="9" class="no-results">No new issues match current filters.</td></tr>`
     : data.map((a) => newAlertRow(a)).join("");
 }
 
@@ -424,10 +581,11 @@ function newAlertRow(a) {
     <tr class="alert-row alert-row-new" id="row-${a.id}">
       <td><span class="status-badge status-new">NEW</span></td>
       <td class="mono">${a.hostname}</td>
-      <td class="mono text-muted">${a.logFile}</td>
+      <td class="mono text-muted">${a.rawFilename || a.logFile}</td>
       <td><span class="error-type">${a.errorType}</span></td>
       <td class="text-red font-bold">${a.count}</td>
       <td class="text-red font-bold">+${a.growth}</td>
+      <td class="${(a.percentageChange ?? 0) > 0 ? "text-red" : "text-muted"} font-bold">${fmtPct(a.percentageChange)}</td>
       <td class="suggested-action">${a.suggestedAction}</td>
       <td><div class="action-btns">
         <button class="btn btn-xs btn-info" onclick="markKnownFromRow('${a.id}')">Mark Known</button>
@@ -442,13 +600,13 @@ function newAlertRow(a) {
 function expandedRowNew(a, fp) {
   return `
     <tr class="expand-row">
-      <td colspan="8">
+      <td colspan="9">
         <div class="expand-panel">
           <div class="expand-grid">
             <div class="expand-block">
               <div class="expand-section-label">Alert Details</div>
               <div class="kv"><span class="k">Hostname</span><span class="v mono">${a.hostname}</span></div>
-              <div class="kv"><span class="k">Log File</span><span class="v mono">${a.logFile}</span></div>
+              <div class="kv"><span class="k">Log File</span><span class="v mono">${a.rawFilename || a.logFile}</span></div>
               <div class="kv"><span class="k">Error Type</span><span class="v">${a.errorType}</span></div>
               <div class="kv"><span class="k">Count</span><span class="v text-red">${a.count}</span></div>
               <div class="kv"><span class="k">Growth</span><span class="v text-red">+${a.growth}</span></div>
@@ -459,6 +617,7 @@ function expandedRowNew(a, fp) {
               <div class="kv"><span class="k">Suggested Action</span><span class="v">${a.suggestedAction}</span></div>
               <div class="kv"><span class="k">Ticket</span><span class="v">${renderTicketField(a)}</span></div>
             </div>
+            ${trendDetailBlock(a)}
             <div class="expand-block expand-block-notes">
               <div class="expand-section-label">Notes</div>
               <textarea id="notes-${a.id}" class="notes-input" placeholder="Add investigation notes…">${a.notes || ""}</textarea>
@@ -489,11 +648,11 @@ function knownAlertRow(a) {
     <tr class="alert-row alert-row-known" id="row-${a.id}">
       <td><span class="status-badge status-known">KNOWN</span></td>
       <td class="mono">${a.hostname}</td>
-      <td class="mono text-muted">${a.logFile}</td>
+      <td class="mono text-muted">${a.rawFilename || a.logFile}</td>
       <td><span class="error-type">${a.errorType}</span></td>
       <td class="font-bold">${a.count}</td>
       <td class="${a.growth > 100 ? "text-orange" : "text-muted"}">+${a.growth}</td>
-      <td><span class="ki-badge">${a.knownIssueId}</span></td>
+      <td class="${(a.percentageChange ?? 0) > 0 ? "text-orange" : "text-muted"}">${fmtPct(a.percentageChange)}</td>
       <td>${a.ticketLink ? `<a href="${a.ticketLink}" class="link" onclick="linkTicketToRow('${a.id}');return false;">${a.ticketLink.replace("#ticket-", "")}</a>` : `<a href="#" class="link text-muted" onclick="linkTicketToRow('${a.id}');return false;">Add</a>`}</td>
       <td><div class="action-btns">
         <button class="btn btn-xs btn-ghost" onclick="linkTicketToRow('${a.id}')">Ticket</button>
@@ -516,7 +675,7 @@ function expandedRowKnown(a, fp) {
             <div class="expand-block">
               <div class="expand-section-label">Alert Details</div>
               <div class="kv"><span class="k">Hostname</span><span class="v mono">${a.hostname}</span></div>
-              <div class="kv"><span class="k">Log File</span><span class="v mono">${a.logFile}</span></div>
+              <div class="kv"><span class="k">Log File</span><span class="v mono">${a.rawFilename || a.logFile}</span></div>
               <div class="kv"><span class="k">Error Type</span><span class="v">${a.errorType}</span></div>
               <div class="kv"><span class="k">Count</span><span class="v">${a.count}</span></div>
               <div class="kv"><span class="k">Growth</span><span class="v ${a.growth > 100 ? "text-orange" : "text-muted"}">+${a.growth}</span></div>
@@ -529,6 +688,7 @@ function expandedRowKnown(a, fp) {
               ${ki ? `<div class="kv"><span class="k">Next Step</span><span class="v">${ki.resolutionSteps.split("\n")[0]}</span></div>` : ""}
               <div class="kv"><span class="k">Ticket</span><span class="v">${renderTicketField(a)}</span></div>
             </div>
+            ${trendDetailBlock(a)}
             <div class="expand-block expand-block-notes">
               <div class="expand-section-label">Notes</div>
               <textarea id="notes-${a.id}" class="notes-input" placeholder="Add notes…">${a.notes || ""}</textarea>
@@ -548,7 +708,7 @@ function renderWorseningSection() {
   if (!tbody) return;
 
   tbody.innerHTML = data.length === 0
-    ? `<tr><td colspan="8" class="no-results">No worsening issues match current filters.</td></tr>`
+    ? `<tr><td colspan="9" class="no-results">No worsening issues match current filters.</td></tr>`
     : data.map((a) => worseningAlertRow(a)).join("");
 }
 
@@ -561,11 +721,12 @@ function worseningAlertRow(a) {
     <tr class="alert-row alert-row-worsening" id="row-${a.id}">
       <td><span class="status-badge status-worsening">WORSENING</span></td>
       <td class="mono">${a.hostname}</td>
-      <td class="mono text-muted">${a.logFile}</td>
+      <td class="mono text-muted">${a.rawFilename || a.logFile}</td>
       <td><span class="error-type">${a.errorType}</span></td>
       <td class="text-muted">${a.normalRange ?? "—"}</td>
       <td class="text-red font-bold">${a.currentCount}</td>
       <td class="text-red font-bold">+${a.growth}</td>
+      <td class="${(a.percentageChange ?? 0) > 0 ? "text-red" : "text-muted"} font-bold">${fmtPct(a.percentageChange)}</td>
       <td><div class="action-btns">
         <button class="btn btn-xs btn-warning" onclick="linkTicketToRow('${a.id}')">Ticket</button>
         <button class="btn btn-xs btn-ghost" onclick="showToast('Add Note (placeholder)')">Note</button>
@@ -580,13 +741,13 @@ function worseningAlertRow(a) {
 function expandedRowWorsening(a, fp) {
   return `
     <tr class="expand-row">
-      <td colspan="8">
+      <td colspan="9">
         <div class="expand-panel">
           <div class="expand-grid">
             <div class="expand-block">
               <div class="expand-section-label">Alert Details</div>
               <div class="kv"><span class="k">Hostname</span><span class="v mono">${a.hostname}</span></div>
-              <div class="kv"><span class="k">Log File</span><span class="v mono">${a.logFile}</span></div>
+              <div class="kv"><span class="k">Log File</span><span class="v mono">${a.rawFilename || a.logFile}</span></div>
               <div class="kv"><span class="k">Error Type</span><span class="v">${a.errorType}</span></div>
               <div class="kv"><span class="k">Normal Range</span><span class="v">${a.normalRange}</span></div>
               <div class="kv"><span class="k">Current Count</span><span class="v text-red font-bold">${a.currentCount}</span></div>
@@ -599,6 +760,7 @@ function expandedRowWorsening(a, fp) {
               <div class="kv"><span class="k">Escalation Rule</span><span class="v text-orange">${a.escalationRule}</span></div>
               <div class="kv"><span class="k">Ticket</span><span class="v">${renderTicketField(a)}</span></div>
             </div>
+            ${trendDetailBlock(a)}
             <div class="expand-block expand-block-notes">
               <div class="expand-section-label">Notes</div>
               <textarea id="notes-${a.id}" class="notes-input" placeholder="Add incident notes…">${a.notes || ""}</textarea>
@@ -630,7 +792,7 @@ function resolvedAlertRow(a) {
       <td><span class="status-badge status-resolved">RESOLVED</span></td>
       <td><span class="error-type">${a.errorType}</span></td>
       <td class="mono">${a.hostname}</td>
-      <td class="mono text-muted">${a.logFile}</td>
+      <td class="mono text-muted">${a.rawFilename || a.logFile}</td>
       <td class="text-muted">${a.previousCount}</td>
       <td class="text-muted">${a.lastSeen}</td>
       <td>${a.resolutionNotes}</td>
@@ -654,7 +816,7 @@ function expandedRowResolved(a, fp) {
             <div class="expand-block">
               <div class="expand-section-label">Alert Details</div>
               <div class="kv"><span class="k">Hostname</span><span class="v mono">${a.hostname}</span></div>
-              <div class="kv"><span class="k">Log File</span><span class="v mono">${a.logFile}</span></div>
+              <div class="kv"><span class="k">Log File</span><span class="v mono">${a.rawFilename || a.logFile}</span></div>
               <div class="kv"><span class="k">Error Type</span><span class="v">${a.errorType}</span></div>
               <div class="kv"><span class="k">Previous Count</span><span class="v">${a.previousCount}</span></div>
             </div>
@@ -674,6 +836,98 @@ function expandedRowResolved(a, fp) {
       </td>
     </tr>
   `;
+}
+
+// ─── Sections: Suppressed / Noise (muted audit view) ──────────────────────────
+// These rows are retained, never deleted — signal_type only controls where they
+// show up in the UI. Collapsed by default since they're a secondary/audit view,
+// not the primary triage workflow.
+const auditSectionsExpanded = { suppressed: false, noise: false };
+
+function toggleAuditSection(key) {
+  auditSectionsExpanded[key] = !auditSectionsExpanded[key];
+  const body = document.getElementById(`body-${key}`);
+  if (body) body.style.display = auditSectionsExpanded[key] ? "" : "none";
+  const caret = document.getElementById(`caret-${key}`);
+  if (caret) caret.textContent = auditSectionsExpanded[key] ? "▲" : "▼";
+}
+
+function auditAlertRow(a, signalLabel) {
+  const fp = buildFingerprint(a);
+  const isExpanded = expandedRows.has(a.id);
+  return `
+    <tr class="alert-row alert-row-muted" id="row-${a.id}">
+      <td><span class="status-badge status-${a.signalType}">${signalLabel}</span></td>
+      <td class="mono text-muted">${a.hostname}</td>
+      <td class="mono text-muted">${a.rawFilename || a.logFile}</td>
+      <td class="text-muted">${a.errorType}</td>
+      <td class="text-muted">${a.color ?? "—"}</td>
+      <td class="text-muted">${a.knownError ? "Yes" : "No"}</td>
+      <td class="text-muted">${a.count}</td>
+      <td class="text-muted">${a.growth >= 0 ? "+" + a.growth : a.growth}</td>
+      <td><div class="action-btns">
+        <button class="btn btn-xs btn-ghost" onclick="linkTicketToRow('${a.id}')">Ticket</button>
+        <button class="btn btn-xs btn-expand" onclick="toggleRow('${a.id}')">${isExpanded ? "▲ Less" : "▼ Details"}</button>
+      </div></td>
+    </tr>
+    ${isExpanded ? expandedRowAudit(a, fp) : ""}
+  `;
+}
+
+function expandedRowAudit(a, fp) {
+  return `
+    <tr class="expand-row">
+      <td colspan="9">
+        <div class="expand-panel">
+          <div class="expand-grid">
+            <div class="expand-block">
+              <div class="expand-section-label">Alert Details</div>
+              <div class="kv"><span class="k">Hostname</span><span class="v mono">${a.hostname}</span></div>
+              <div class="kv"><span class="k">Log File</span><span class="v mono">${a.rawFilename || a.logFile}</span></div>
+              <div class="kv"><span class="k">Error Type</span><span class="v">${a.errorType}</span></div>
+              <div class="kv"><span class="k">Count</span><span class="v">${a.count}</span></div>
+              <div class="kv"><span class="k">Growth</span><span class="v">${a.growth}</span></div>
+            </div>
+            <div class="expand-block">
+              <div class="expand-section-label">Classification</div>
+              <div class="kv"><span class="k">Signal Type</span><span class="v">${a.signalType}</span></div>
+              <div class="kv"><span class="k">Color</span><span class="v">${a.color ?? "—"}</span></div>
+              <div class="kv"><span class="k">Known Error</span><span class="v">${a.knownError ? "Yes" : "No"}</span></div>
+              <div class="kv"><span class="k">Fingerprint</span><span class="v fp-chip">${fp}</span></div>
+              <div class="kv"><span class="k">Ticket</span><span class="v">${renderTicketField(a)}</span></div>
+            </div>
+            <div class="expand-block expand-block-notes">
+              <div class="expand-section-label">Notes</div>
+              <textarea id="notes-${a.id}" class="notes-input" placeholder="Add notes…">${a.notes || ""}</textarea>
+              <button class="btn btn-xs btn-ghost mt-4" onclick="saveNoteFromRow('${a.id}')">Save Note</button>
+            </div>
+          </div>
+        </div>
+      </td>
+    </tr>
+  `;
+}
+
+function renderSuppressedSection() {
+  const tbody = document.getElementById("tbody-suppressed");
+  if (!tbody) return;
+  const data = STORE.suppressedAlerts || [];
+  tbody.innerHTML = data.length === 0
+    ? `<tr><td colspan="9" class="no-results">No suppressed rows.</td></tr>`
+    : data.map((a) => auditAlertRow(a, "SUPPRESSED")).join("");
+  const countEl = document.getElementById("count-suppressed");
+  if (countEl) countEl.textContent = data.length;
+}
+
+function renderNoiseSection() {
+  const tbody = document.getElementById("tbody-noise");
+  if (!tbody) return;
+  const data = STORE.noiseAlerts || [];
+  tbody.innerHTML = data.length === 0
+    ? `<tr><td colspan="9" class="no-results">No noise rows.</td></tr>`
+    : data.map((a) => auditAlertRow(a, "NOISE")).join("");
+  const countEl = document.getElementById("count-noise");
+  if (countEl) countEl.textContent = data.length;
 }
 
 // ─── Row Toggle ───────────────────────────────────────────────────────────────

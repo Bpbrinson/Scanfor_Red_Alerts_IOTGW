@@ -89,7 +89,7 @@ The backend serves the frontend directly, so there are no CORS issues.
 | GET | `/api/health` | Health check |
 | GET | `/api/summary` | Summary card counts |
 | GET | `/api/alert-batches/latest` | Latest batch metadata |
-| GET | `/api/alerts` | All classified alert events |
+| GET | `/api/alerts` | Classified alert events — defaults to `signal_type=actionable`; see `include=` below |
 | GET | `/api/known-issues` | Known issue catalog |
 | GET | `/api/prom/status` | Current Prometheus file status |
 | POST | `/api/prom/process` | Process the configured `.prom` file immediately |
@@ -329,6 +329,71 @@ Using an external `.prom` source folder:
 
 ---
 
+## Phase 5 — Actionable vs. Noise Classification
+
+Every parsed `.prom` row is still stored, always — this feature only changes how rows are
+**displayed and queried**, never what's ingested. Alongside the existing `category` field
+(new/known/worsening/resolved), each `AlertEvent` now also carries a `signal_type`:
+
+| `signal_type` | Meaning |
+|---|---|
+| `actionable` | Color is in `SCANFOR_ACTIONABLE_COLORS` and it isn't a suppressed known error |
+| `noise` | Color isn't actionable (e.g. black/green), or missing/unrecognized |
+| `suppressed` | A known error, and `SCANFOR_SUPPRESS_KNOWN_ERRORS=true` |
+
+Classification rule (`backend/services/classifier.py::classify_alert_signal`):
+
+```python
+if known_error and suppress_known_errors:
+    signal_type = "suppressed"
+elif normalized_color in actionable_colors:
+    signal_type = "actionable"
+else:
+    signal_type = "noise"
+```
+
+### Configuration
+
+```env
+SCANFOR_ACTIONABLE_COLORS=red,yellow
+SCANFOR_SUPPRESS_KNOWN_ERRORS=true
+```
+
+| Env var | Default | Meaning |
+|---|---|---|
+| `SCANFOR_ACTIONABLE_COLORS` | `red,yellow` | Case-insensitive, comma-separated. Blank/invalid falls back to the default. |
+| `SCANFOR_SUPPRESS_KNOWN_ERRORS` | `true` | Accepts `true`/`1`/`yes`/`on` (case-insensitive) as true. |
+
+### API examples
+
+```bash
+curl http://localhost:9000/api/alerts                          # actionable only (default)
+curl http://localhost:9000/api/alerts?include=noise            # noise rows
+curl http://localhost:9000/api/alerts?include=suppressed        # suppressed rows
+curl http://localhost:9000/api/alerts?include=noise,suppressed  # both
+curl http://localhost:9000/api/alerts?include=all               # everything, all signal_types
+```
+
+`GET /api/summary` gained a `signal_counts` breakdown (`{actionable, noise, suppressed, total}`)
+scoped to the latest batch, alongside its existing (now actionable-only) primary tiles.
+
+### Dashboard
+
+The main New/Known/Worsening/Resolved tables show actionable alerts only, by default.
+Two muted, collapsed-by-default sections below them — **Suppressed** and **Noise** — show
+everything else for auditing. Nothing is deleted; a row can move between sections on the
+next `.prom` ingestion if its color or known-error flag changes, or if you change the env
+vars above and restart.
+
+### Migration
+
+No migration framework (Alembic) exists in this project. `backend/database/db.py::ensure_signal_type_column()`
+runs at startup (idempotent): it adds the column via `ALTER TABLE ... ADD COLUMN ... DEFAULT 'noise'`
+if missing, then backfills every existing row's real classification from its stored `color`/`known_error`
+using the same rule ingestion uses. No rows are ever dropped.
+
+---
+
 ## Phase History
 
 | Phase | Description |
@@ -337,3 +402,4 @@ Using an external `.prom` source folder:
 | Phase 2 | FastAPI backend + API fetch layer; frontend connected to backend |
 | Phase 3 | SQLite database layer + database-backed API |
 | Phase 4 | Folder-based `.prom` ingestion, snapshot tracking, change detection |
+| Phase 5 | `signal_type` classification (actionable/noise/suppressed) + dashboard filtering |

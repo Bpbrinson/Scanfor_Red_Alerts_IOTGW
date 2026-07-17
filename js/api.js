@@ -22,8 +22,12 @@ function _transformAlert(a) {
     id:                   a.alert_id,
     status:               a.status,
     category:             a.category,
+    signalType:           a.signal_type,
+    color:                a.color,
+    knownError:           a.raw_known_error === "true" || a.raw_known_error === true,
     hostname:             a.hostname,
-    logFile:              a.log_file,
+    logFile:              a.log_file,       // normalized (date stripped) — used for fingerprint/search/mark-known
+    rawFilename:          a.raw_filename,   // full filename including date, for display only
     errorType:            a.error_type,
     count:                a.count,
     currentCount:         a.count,   // worsening rows use currentCount
@@ -41,6 +45,37 @@ function _transformAlert(a) {
     notes:                a.notes || "",
     normalRange:          a.normal_range,
     escalationRule:       a.escalation_rule,
+
+    // ─── Trend analysis (backend/services/trends.py) ─────────────────────
+    alertKey:                 a.alert_key,
+    currentValue:             a.current_value,
+    previousValue:            a.previous_value,
+    isRed:                    !!a.is_red,
+    absoluteChange:           a.absolute_change,
+    percentageChange:         a.percentage_change,
+    growthRatePerHour:        a.growth_rate_per_hour,
+    change15m:                a.change_15m,
+    percentageChange15m:      a.percentage_change_15m,
+    change1h:                 a.change_1h,
+    percentageChange1h:       a.percentage_change_1h,
+    change6h:                 a.change_6h,
+    percentageChange6h:       a.percentage_change_6h,
+    change24h:                a.change_24h,
+    percentageChange24h:      a.percentage_change_24h,
+    slope1h:                  a.slope_1h,
+    slope6h:                  a.slope_6h,
+    acceleration:             a.acceleration,
+    thresholdExcessPercentage: a.threshold_excess_percentage,
+    redStartedAt:             a.red_started_at,
+    redDurationSeconds:       a.red_duration_seconds,
+    consecutiveRedSnapshots:  a.consecutive_red_snapshots,
+    redStateTransitionCount:  a.red_state_transition_count,
+    isFlapping:               !!a.is_flapping,
+    trendState:               a.trend_state,
+    changeScore:              a.change_score,
+    changeScoreConfidence:    a.change_score_confidence,
+    changeScoreComponents:    a.change_score_components,
+    affectedVmCount:          a.affected_vm_count,
   };
 }
 
@@ -92,8 +127,11 @@ async function getLatestBatch() {
   return _transformBatch(data);
 }
 
-async function getAlerts() {
-  const res = await fetch(`${API_BASE}/alerts`);
+async function getAlerts(include = "all") {
+  // include=all fetches actionable + noise + suppressed in one call; dataStore.js
+  // does the actionable/noise/suppressed split client-side, the same way it
+  // already splits by category (new/known/worsening/resolved).
+  const res = await fetch(`${API_BASE}/alerts?include=${encodeURIComponent(include)}`);
   if (!res.ok) throw new Error(`/api/alerts returned ${res.status}`);
   const data = await res.json();
   return data.map(_transformAlert);

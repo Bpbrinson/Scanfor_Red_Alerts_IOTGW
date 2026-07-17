@@ -14,9 +14,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from backend.database.db import Base, engine
+from backend.database.db import run_migrations
 from backend.database import models  # noqa: F401 — register models with Base
-from backend.routes import health, summary, alerts, known_issues, alert_batches, prom
+from backend.routes import health, summary, alerts, known_issues, alert_batches, prom, retention
 from backend.services.prom_watcher import start_prom_watcher, stop_prom_watcher
 
 app = FastAPI(
@@ -41,13 +41,15 @@ app.include_router(alerts.router, prefix="/api")
 app.include_router(alert_batches.router, prefix="/api")
 app.include_router(known_issues.router, prefix="/api")
 app.include_router(prom.router, prefix="/api")
+app.include_router(retention.router, prefix="/api")
 
 
 @app.on_event("startup")
 async def startup_event():
-    # Idempotent — creates any tables that don't exist yet. Safe in containers
-    # where the SQLite file lives on a first-run empty volume.
-    Base.metadata.create_all(bind=engine)
+    # Idempotent — brings the DB to the latest Alembic revision. Safe for a
+    # first-run empty volume (creates everything) or an already-migrated one
+    # (no-op) alike. See backend/database/db.py::run_migrations.
+    run_migrations()
     await start_prom_watcher()
 
 

@@ -26,8 +26,8 @@ Cron entry (every 10 minutes):
 import logging
 import sys
 
-from backend.database.db import Base, SessionLocal, engine
-from backend.services.prom_ingestor import process_prom_file
+from backend.database.db import SessionLocal, run_migrations
+from backend.services.prom_ingestor import ProcessAlreadyRunningError, process_prom_file
 
 logging.basicConfig(
     level=logging.INFO,
@@ -38,8 +38,9 @@ _LOG = logging.getLogger(__name__)
 
 
 def main() -> int:
-    # Ensure tables exist (safe to call repeatedly; a no-op if already created)
-    Base.metadata.create_all(bind=engine)
+    # Idempotent — brings the DB to the latest Alembic revision (safe to
+    # call every run; a no-op once already at head).
+    run_migrations()
 
     db = SessionLocal()
     try:
@@ -49,13 +50,23 @@ def main() -> int:
             _LOG.info("skipped — folder unchanged (hash=%s)", result.get("file_hash", "")[:12])
         else:
             _LOG.info(
-                "processed — files=%d metrics=%d new_events=%d resolved=%d batch=%s",
+                "processed — files=%d metrics=%d new_events=%d resolved=%d carried_forward=%d "
+                "completeness=%s batch=%s",
                 result["total_files"],
                 result["total_metrics"],
                 result["created_alert_events"],
                 result["resolved_alert_events"],
+                result["carried_forward_alert_events"],
+                result["completeness_status"],
                 result["batch_id"],
             )
+            if result["missing_files"]:
+                _LOG.warning("missing source file(s) this run: %s", ", ".join(result["missing_files"]))
+        return 0
+    except ProcessAlreadyRunningError as exc:
+        # The watcher (or a manual "Process Now" click) is already running —
+        # benign; the next cron fire will catch up.
+        _LOG.info("skipped — %s", exc)
         return 0
     except FileNotFoundError as exc:
         _LOG.error("prom path not found: %s", exc)

@@ -11,6 +11,7 @@ recurring issue maps to the same key every day.
 """
 
 import re
+from typing import Optional
 
 
 def extract_env(hostname: str) -> str:
@@ -37,6 +38,13 @@ def extract_host_prefix(hostname: str) -> str:
 def extract_log_scope(log_file: str) -> str:
     """listener-main.20260630 → listener-main"""
     return re.sub(r"\.\d{8}$", "", log_file)
+
+
+def extract_log_epoch(log_file: str) -> Optional[str]:
+    """listener-main.20260630 → "20260630" — the counter epoch this raw
+    filename belongs to. None if there's no trailing date suffix at all."""
+    match = re.search(r"\.(\d{8})$", log_file or "")
+    return match.group(1) if match else None
 
 
 def build_fingerprint(hostname: str, log_file: str, error_type: str) -> str:

@@ -14,17 +14,28 @@
 
 const STORE = {
   batch:               null,  // current alert batch metadata
-  allAlerts:           [],    // all categories combined
-  newAlerts:           [],
-  knownAlerts:         [],
-  worseningAlerts:     [],
-  resolvedAlerts:      [],
+  allAlerts:           [],    // all categories + all signal_types combined
+  newAlerts:           [],    // actionable only, by default
+  knownAlerts:         [],    // actionable only, by default
+  worseningAlerts:     [],    // actionable only, by default
+  resolvedAlerts:      [],    // actionable only, by default
+  suppressedAlerts:    [],    // signal_type === "suppressed", all categories
+  noiseAlerts:         [],    // signal_type === "noise", all categories
   knownIssuesCatalog:  [],
   loaded:              false,
   usingFallback:       false,
   promStatus:         null,
   promFiles:          null,
 };
+
+/**
+ * Rows fetched before the signal_type feature existed (e.g. the JS mock
+ * fallback data) have no signalType at all — treat those as actionable so
+ * the offline demo experience doesn't regress.
+ */
+function _isActionable(alert) {
+  return alert.signalType == null || alert.signalType === "actionable";
+}
 
 /**
  * Store Prometheus .prom status information.
@@ -52,10 +63,12 @@ function populateStoreFromApi(batch, alerts, knownIssues) {
 
   STORE.batch              = batch;
   STORE.allAlerts          = normalized;
-  STORE.newAlerts          = normalized.filter((a) => a.category === "new");
-  STORE.knownAlerts        = normalized.filter((a) => a.category === "known");
-  STORE.worseningAlerts    = normalized.filter((a) => a.category === "worsening");
-  STORE.resolvedAlerts     = normalized.filter((a) => a.category === "resolved");
+  STORE.newAlerts          = normalized.filter((a) => a.category === "new" && _isActionable(a));
+  STORE.knownAlerts        = normalized.filter((a) => a.category === "known" && _isActionable(a));
+  STORE.worseningAlerts    = normalized.filter((a) => a.category === "worsening" && _isActionable(a));
+  STORE.resolvedAlerts     = normalized.filter((a) => a.category === "resolved" && _isActionable(a));
+  STORE.suppressedAlerts   = normalized.filter((a) => a.signalType === "suppressed");
+  STORE.noiseAlerts        = normalized.filter((a) => a.signalType === "noise");
   STORE.knownIssuesCatalog = knownIssues;
   STORE.loaded             = true;
   STORE.usingFallback      = false;
@@ -81,6 +94,8 @@ function populateStoreFromMock() {
   STORE.worseningAlerts    = wsA;
   STORE.resolvedAlerts     = resA;
   STORE.allAlerts          = [...newA, ...knA, ...wsA, ...resA];
+  STORE.suppressedAlerts   = [];
+  STORE.noiseAlerts        = [];
   STORE.knownIssuesCatalog = KNOWN_ISSUES;
   STORE.promStatus         = null;
   STORE.promFiles          = null;

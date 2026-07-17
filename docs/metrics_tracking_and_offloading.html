@@ -1,0 +1,583 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Scanfor Red — Metric Tracking, Storage &amp; Offloading Reference</title>
+<style>
+  @page { size: Letter; margin: 20mm 16mm; }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+    color: #1c1e21;
+    font-size: 11.5px;
+    line-height: 1.5;
+    max-width: 100%;
+  }
+  h1 { font-size: 22px; margin: 0 0 4px; color: #111; }
+  h2 { font-size: 16px; margin: 26px 0 8px; color: #a4231f; border-bottom: 2px solid #a4231f; padding-bottom: 4px; page-break-after: avoid; }
+  h3 { font-size: 13px; margin: 16px 0 6px; color: #333; page-break-after: avoid; }
+  .subtitle { font-size: 12px; color: #666; margin-bottom: 2px; }
+  .meta { font-size: 10px; color: #888; margin-bottom: 18px; }
+  p { margin: 6px 0; }
+  code, .code {
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+    background: #f2f2f2;
+    padding: 1px 4px;
+    border-radius: 3px;
+    font-size: 10.5px;
+  }
+  pre {
+    background: #f5f5f5;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 8px 10px;
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+    font-size: 10px;
+    overflow-x: auto;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 8px 0 14px;
+    font-size: 10.5px;
+    page-break-inside: avoid;
+  }
+  th, td {
+    border: 1px solid #ddd;
+    padding: 5px 7px;
+    text-align: left;
+    vertical-align: top;
+  }
+  th { background: #a4231f; color: #fff; font-weight: 600; }
+  tr:nth-child(even) td { background: #fafafa; }
+  .card {
+    border: 1px solid #ddd;
+    border-left: 4px solid #a4231f;
+    border-radius: 4px;
+    padding: 10px 14px;
+    margin: 10px 0 16px;
+    background: #fdfaf9;
+    page-break-inside: avoid;
+  }
+  .card-title { font-weight: 700; font-size: 12.5px; margin-bottom: 4px; }
+  .tag {
+    display: inline-block;
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    padding: 2px 6px;
+    border-radius: 3px;
+    margin-right: 6px;
+  }
+  .tag-table { background: #dce8ff; color: #1a3f8f; }
+  .tag-file { background: #ffe9c7; color: #8a5300; }
+  .tag-none { background: #f8d7da; color: #842029; }
+  .callout {
+    border-radius: 4px;
+    padding: 10px 14px;
+    margin: 12px 0;
+    font-size: 10.5px;
+    page-break-inside: avoid;
+  }
+  .callout-warn { background: #fff3e0; border: 1px solid #f0c36d; }
+  .callout-danger { background: #fde8e8; border: 1px solid #e39a9a; }
+  .callout-info { background: #eaf2ff; border: 1px solid #a9c6f5; }
+  .callout-rec { background: #eafbf0; border: 1px solid #8fd6a9; }
+  .callout-done { background: #e3f6e8; border: 1px solid #4caf6f; }
+  .badge-done { display: inline-block; font-size: 9px; font-weight: 700; text-transform: uppercase; padding: 2px 7px; border-radius: 10px; background: #2f9e57; color: #fff; margin-right: 6px; }
+  .callout-title { font-weight: 700; margin-bottom: 3px; }
+  .prio {
+    display: inline-block;
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    padding: 2px 7px;
+    border-radius: 10px;
+    margin-right: 6px;
+  }
+  .prio-now { background: #a4231f; color: #fff; }
+  .prio-next { background: #d98c00; color: #fff; }
+  .prio-later { background: #4a6fa5; color: #fff; }
+  .rec-item { border: 1px solid #ddd; border-left: 4px solid #2f9e57; border-radius: 4px; padding: 8px 12px; margin: 10px 0; page-break-inside: avoid; }
+  .rec-head { font-weight: 700; font-size: 12px; margin-bottom: 3px; }
+  .rec-meta { font-size: 9.5px; color: #666; margin-bottom: 5px; }
+  .field-list { font-size: 10.5px; }
+  .kv { display: flex; gap: 6px; margin: 2px 0; }
+  .kv .k { color: #777; min-width: 90px; }
+  .page-break { page-break-before: always; }
+  ul, ol { margin: 6px 0; padding-left: 20px; }
+  li { margin: 2px 0; }
+  .toc a { color: #a4231f; text-decoration: none; }
+  .toc li { margin: 3px 0; }
+  footer { margin-top: 30px; font-size: 9px; color: #999; border-top: 1px solid #ddd; padding-top: 8px; }
+</style>
+</head>
+<body>
+
+<h1>Scanfor Red — Metric Tracking, Storage &amp; Offloading Reference</h1>
+<div class="subtitle">Where every tracked metric lives, how it's written, how fast it grows, and how it's offloaded to avoid database overload.</div>
+<div class="meta">Reflects the codebase as of the current SQLite/Phase&nbsp;4 architecture (backend/database/models.py, backend/services/prom_ingestor.py).</div>
+<div class="callout callout-done" style="margin-top:10px">
+  <div class="callout-title"><span class="badge-done">Update</span>Five of the six recommendations below (§11, items 1–5) have been implemented and verified.</div>
+  <p>
+    Indexes on the four hot-path columns, the ticket auto-copy fix, the known-issue
+    match-precedence fix, a DB-size/row-count health check, and a working retention/offload
+    job (<code>backend/cron_cleanup.py</code>, 90-day default window) are all live. Item 6
+    (Postgres migration) remains a future trigger condition only — see §11.
+  </p>
+</div>
+
+<div class="toc">
+  <h2>Contents</h2>
+  <ol>
+    <li><a href="#overview">Storage Overview</a></li>
+    <li><a href="#alert-events">Alert Events — the core metric record</a></li>
+    <li><a href="#alert-batches">Alert Batches</a></li>
+    <li><a href="#notes">Notes</a></li>
+    <li><a href="#tickets">Tickets</a></li>
+    <li><a href="#marked-known">Marked-Known / Known Issues</a></li>
+    <li><a href="#status-history">Status History (audit trail)</a></li>
+    <li><a href="#snapshots">Prometheus Snapshots &amp; Snapshot Files (the comparison mechanism)</a></li>
+    <li><a href="#growth">Growth Rate &amp; Volume Projection</a></li>
+    <li><a href="#offloading">Current Offloading Status — and what's missing</a></li>
+    <li><a href="#recommendations">Prioritized Recommendations (Now / Next / Later)</a></li>
+    <li><a href="#quickref">Quick Reference Table</a></li>
+  </ol>
+</div>
+
+<div class="page-break"></div>
+
+<h2 id="overview">1. Storage Overview</h2>
+<p>
+  Every persisted metric lives in <strong>one SQLite database file</strong> — there is no
+  separate metrics store, time-series DB, or message queue. The engine is defined in
+  <code>backend/database/db.py</code>:
+</p>
+<div class="field-list">
+  <div class="kv"><span class="k">Engine</span><span>SQLite, accessed via SQLAlchemy ORM</span></div>
+  <div class="kv"><span class="k">File type</span><span><code>.db</code> (SQLite binary file)</span></div>
+  <div class="kv"><span class="k">Default location</span><span><code>backend/database/scanfor_red.db</code></span></div>
+  <div class="kv"><span class="k">Override</span><span>env var <code>SCANFOR_DB_PATH</code> (Docker default: <code>/data/scanfor_red.db</code>, on a named volume)</span></div>
+  <div class="kv"><span class="k">Tables</span><span>7 — created idempotently on startup via <code>Base.metadata.create_all()</code></span></div>
+</div>
+<p>The 7 tables, all defined in <code>backend/database/models.py</code>:</p>
+<table>
+  <thead><tr><th>Table</th><th>Model class</th><th>Tracks</th></tr></thead>
+  <tbody>
+    <tr><td><code>alert_batches</code></td><td>AlertBatch</td><td>One row per ingestion run (a "batch")</td></tr>
+    <tr><td><code>alert_events</code></td><td>AlertEvent</td><td>One row per alert/metric per batch — the core data</td></tr>
+    <tr><td><code>known_issues</code></td><td>KnownIssue</td><td>The known-issue catalog engineers maintain</td></tr>
+    <tr><td><code>alert_notes</code></td><td>AlertNote</td><td>Full history of triage notes per alert</td></tr>
+    <tr><td><code>issue_status_history</code></td><td>IssueStatusHistory</td><td>Audit trail of every status/category change</td></tr>
+    <tr><td><code>prom_snapshots</code></td><td>PromSnapshot</td><td>One row per ingestion run's file-comparison metadata</td></tr>
+    <tr><td><code>prom_snapshot_files</code></td><td>PromSnapshotFile</td><td>One row per individual <code>.prom</code> file read in a snapshot</td></tr>
+  </tbody>
+</table>
+<p>
+  Upstream of the database, the <strong>only external file inputs</strong> are the
+  <code>.prom</code> text files (Prometheus exposition format) at the path configured by
+  <code>SCANFOR_PROM_FILE_PATH</code>. These are read-only — the app never writes back to them.
+</p>
+
+<h2 id="alert-events">2. Alert Events — the core metric record <span class="tag tag-table">SQLite table: alert_events</span></h2>
+<div class="card">
+  <div class="card-title">What it is</div>
+  <p>
+    One row is written <strong>per parsed <code>.prom</code> metric line, on every single
+    ingestion run</strong> — not just when something changes. If 80 metrics are active and
+    ingestion runs every 10 minutes, that's 80 new rows every 10 minutes, indefinitely.
+    Written in <code>backend/services/prom_ingestor.py</code> (<code>_build_alert_event</code>),
+    read via <code>GET /api/alerts</code> (<code>backend/routes/alerts.py</code>).
+  </p>
+</div>
+<table>
+  <thead><tr><th>Field</th><th>Meaning</th></tr></thead>
+  <tbody>
+    <tr><td><code>alert_id</code></td><td>Deterministic SHA-1-derived ID, unique per snapshot+alert (indexed)</td></tr>
+    <tr><td><code>batch_id</code></td><td>FK to the ingestion run that produced this row (not indexed — see §10)</td></tr>
+    <tr><td><code>snapshot_id</code></td><td>FK-like string to <code>prom_snapshots.snapshot_id</code> (not indexed — see §10)</td></tr>
+    <tr><td><code>category</code> / <code>status</code></td><td><code>new</code> | <code>known</code> | <code>worsening</code> | <code>resolved</code></td></tr>
+    <tr><td><code>count</code></td><td>Cumulative error count read straight from the <code>.prom</code> file (not a delta)</td></tr>
+    <tr><td><code>previous_count</code></td><td>The <code>count</code> value from the matching alert in the prior snapshot</td></tr>
+    <tr><td><code>growth</code></td><td><code>count − previous_count</code>, computed at ingest time</td></tr>
+    <tr><td><code>fingerprint_exact</code> / <code>fingerprint_general</code></td><td>Match keys used to link this row to its predecessor across snapshots (see §8)</td></tr>
+    <tr><td><code>first_seen</code> / <code>last_seen</code></td><td>ISO timestamps; <code>first_seen</code> is carried forward from the earliest matching row</td></tr>
+    <tr><td><code>severity</code>, <code>owner</code>, <code>known_issue_id</code>, <code>runbook_link</code>, <code>ticket_link</code></td><td>Populated from the matched Known Issue, or manually via the API</td></tr>
+    <tr><td><code>notes</code></td><td>Latest note text only (full history lives in <code>alert_notes</code> — see §4)</td></tr>
+    <tr><td>Raw <code>.prom</code> fields</td><td><code>hostname</code>, <code>raw_filename</code>, <code>log_file</code>, <code>error_type</code>, <code>error_index</code>, <code>color</code>, <code>system</code>, <code>tenant</code>, <code>system_type</code>, <code>caused_by</code>, <code>raw_known_error</code>, <code>raw_note</code> — copied verbatim from the source file for traceability</td></tr>
+  </tbody>
+</table>
+<div class="callout callout-warn">
+  <div class="callout-title">Why this table is the overload risk</div>
+  <p>
+    Every table below either grows once per <em>batch</em> (slow) or once per user action
+    (slow). <code>alert_events</code> grows once per <em>metric line, per batch</em> — the
+    multiplier that matters most for sizing. See §9 for the math.
+  </p>
+</div>
+
+<h2 id="alert-batches">3. Alert Batches <span class="tag tag-table">SQLite table: alert_batches</span></h2>
+<p>One row per ingestion run (cron fire or manual "Process .prom Folder Now" click), regardless of how many files/metrics it contained. Written in <code>process_prom_file()</code>, read via <code>GET /api/alert-batches/latest</code>.</p>
+<table>
+  <thead><tr><th>Field</th><th>Meaning</th></tr></thead>
+  <tbody>
+    <tr><td><code>batch_id</code></td><td>Format <code>PROM-YYYYMMDD-HHMMSS-&lt;6-char folder hash&gt;</code>; unique, indexed</td></tr>
+    <tr><td><code>received_time</code> / <code>received_time_display</code></td><td>Parsed from the <code># Generated:</code> header line inside the <code>.prom</code> files</td></tr>
+    <tr><td><code>processed_at</code></td><td>Wall-clock time the ingest actually ran</td></tr>
+    <tr><td><code>total_issues_detected</code></td><td>Count of alert events created in this batch</td></tr>
+    <tr><td><code>source</code>, <code>environment</code>, <code>sender</code>, <code>email_subject</code></td><td>Static/descriptive metadata (no real email ingestion yet — these are placeholder-style fields carried over from the original email-alert design)</td></tr>
+  </tbody>
+</table>
+
+<h2 id="notes">4. Notes <span class="tag tag-table">SQLite tables: alert_events.notes + alert_notes</span></h2>
+<div class="card">
+  <div class="card-title">Two-part storage, by design</div>
+  <p>Notes are <strong>not</strong> a single field — they're tracked in two places simultaneously so both "latest state" and "full history" are cheap to query:</p>
+  <ul>
+    <li><code>alert_events.notes</code> — a single text column holding only the <em>most recent</em> note; overwritten on every new note.</li>
+    <li><code>alert_notes</code> table — append-only; one row per note ever submitted, never overwritten or deleted.</li>
+  </ul>
+</div>
+<table>
+  <thead><tr><th>Field (alert_notes)</th><th>Meaning</th></tr></thead>
+  <tbody>
+    <tr><td><code>alert_event_id</code></td><td>FK to <code>alert_events.alert_id</code> (not indexed — see §10)</td></tr>
+    <tr><td><code>note</code></td><td>Free-text triage note</td></tr>
+    <tr><td><code>created_by</code></td><td>Defaults to <code>"user"</code> — no authenticated identity yet (Phase 3+ item)</td></tr>
+    <tr><td><code>created_at</code> / <code>updated_at</code></td><td>Timestamps</td></tr>
+  </tbody>
+</table>
+<p><strong>Written by:</strong> <code>POST /api/alerts/{alert_id}/notes</code> in <code>backend/routes/alerts.py</code>. <strong>Growth:</strong> one row per manual note submission — human-paced, not batch-paced. Low volume; not an overload risk on its own.</p>
+
+<h2 id="tickets">5. Tickets <span class="tag tag-table">SQLite table: alert_events.ticket_link + known_issues.ticket_link</span></h2>
+<p>
+  There is <strong>no dedicated tickets table</strong> — a ticket is just a URL/ID string
+  stored on two possible rows:
+</p>
+<ul>
+  <li><code>alert_events.ticket_link</code> — per-alert ticket, set via <code>PATCH /api/alerts/{alert_id}/ticket</code></li>
+  <li><code>known_issues.ticket_link</code> — per-known-issue ticket, set when creating/updating a Known Issue (<code>POST</code>/<code>PUT /api/known-issues</code>)</li>
+</ul>
+<p>
+  When an alert is linked to a Known Issue via "mark known" (§6), the Known Issue's
+  <code>ticket_link</code> is auto-copied onto the alert event whenever the alert doesn't
+  already have one of its own (<code>event.ticket_link = event.ticket_link or
+  known_issue.ticket_link</code>), alongside the existing <code>owner</code> and
+  <code>runbook_link</code> copy-over.
+</p>
+<div class="callout callout-info">
+  <div class="callout-title">Growth</div>
+  <p>Ticket links are set once per alert/issue by a human — negligible row growth (it's an
+  UPDATE on an existing row, not a new row). No offloading concern.</p>
+</div>
+<div class="callout callout-done">
+  <div class="callout-title"><span class="badge-done">Implemented</span>Ticket auto-copy on mark-known</div>
+  <p>
+    Previously, a freshly-linked alert could silently show no ticket even though its parent
+    Known Issue had one on file. Fixed in <code>mark_alert_known()</code>
+    (<code>backend/routes/alerts.py</code>) — verified live against the running API.
+  </p>
+</div>
+
+<h2 id="marked-known">6. Marked Known / Known Issues <span class="tag tag-table">SQLite table: known_issues</span></h2>
+<div class="card">
+  <div class="card-title">Two ways an alert becomes "known"</div>
+  <ol>
+    <li><strong>Automatic</strong> — every ingestion run matches each alert's fingerprint against the active Known Issue catalog (<code>find_matching_known_issue</code> in <code>backend/services/classifier.py</code>). A match sets <code>category = known</code> or <code>worsening</code> with no human action.</li>
+    <li><strong>Manual</strong> — <code>POST /api/alerts/{alert_id}/mark-known</code> (<code>backend/routes/alerts.py</code>) either links the alert to an existing <code>known_issue_id</code> or creates a brand-new <code>KnownIssue</code> row on the fly, then re-classifies the alert and force-sets its category.</li>
+  </ol>
+</div>
+<table>
+  <thead><tr><th>Field (known_issues)</th><th>Meaning</th></tr></thead>
+  <tbody>
+    <tr><td><code>known_issue_id</code></td><td>Format <code>KI-NNN</code>, auto-incremented; unique, indexed</td></tr>
+    <tr><td><code>fingerprint</code></td><td>Optional exact/wildcard pattern matched against the alert's fingerprint string first, before falling back to scope matching</td></tr>
+    <tr><td><code>host_scope</code> / <code>log_scope</code> / <code>error_type</code></td><td>Wildcard-capable scope fields used when no fingerprint is set</td></tr>
+    <tr><td><code>normal_count_min/max</code>, <code>normal_growth_min/max</code></td><td>Thresholds — exceeding <code>normal_count_max</code> with positive growth reclassifies the alert as <code>worsening</code></td></tr>
+    <tr><td><code>status</code></td><td><code>active</code> | <code>monitoring</code> | <code>archived</code> — archived issues are excluded from matching but the row is never deleted</td></tr>
+    <tr><td><code>cause</code>, <code>impact</code>, <code>resolution_steps</code>, <code>runbook_link</code>, <code>ticket_link</code>, <code>last_reviewed</code></td><td>Human-maintained triage reference content</td></tr>
+  </tbody>
+</table>
+<p><strong>Growth:</strong> one row per distinct known issue an engineer catalogs — low volume, grows in the tens/hundreds over the life of the project, not per-ingestion. Archiving (§9) sets a status flag; it does not remove the row.</p>
+<div class="callout callout-rec">
+  <div class="callout-title"><span class="badge-done">Implemented</span>Scope-match specificity precedence</div>
+  <p>
+    Previously, <code>find_matching_known_issue()</code> (<code>backend/services/classifier.py</code>)
+    returned the <em>first</em> matching Known Issue in catalog order, so classification
+    could silently depend on insertion order when two active Known Issues both matched
+    (e.g. a broad wildcard scope and a narrower one). Fixed: exact fingerprint match still
+    always wins; among multiple scope-wildcard matches, the one with the least-wildcarded
+    (most specific) <code>host_scope</code>/<code>log_scope</code> now wins. Verified with a
+    test case — a <code>cars-*</code> catalog entry and a <code>cars-cars1-*</code> entry
+    both matching the same alert, with the more specific one correctly selected.
+  </p>
+</div>
+
+<h2 id="status-history">7. Status History (audit trail) <span class="tag tag-table">SQLite table: issue_status_history</span></h2>
+<p>
+  Every status change — manual (<code>PATCH /api/alerts/{alert_id}/status</code>) or via
+  mark-known — appends one row here, capturing <code>old_status</code>, <code>new_status</code>,
+  <code>changed_by</code>, and an optional <code>change_reason</code>. This is the only
+  place a full audit trail of triage decisions is kept; <code>alert_events</code> itself
+  only ever shows current state.
+</p>
+<div class="callout callout-info">
+  <div class="callout-title">Growth</div>
+  <p>One row per human status change — human-paced, low volume. Not an overload risk on its own, but see §9 — it cascade-deletes if its parent <code>alert_events</code> row is ever deleted, which matters for any future purge job.</p>
+</div>
+
+<h2 id="snapshots">8. Prometheus Snapshots &amp; Snapshot Files — the comparison mechanism <span class="tag tag-table">SQLite tables: prom_snapshots + prom_snapshot_files</span></h2>
+<p>This is the machinery that makes growth/resolved detection possible. Two tables, one per ingestion run:</p>
+<table>
+  <thead><tr><th>Table</th><th>Granularity</th><th>Key fields</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><code>prom_snapshots</code></td>
+      <td>One row per ingestion run</td>
+      <td><code>snapshot_id</code>, <code>file_hash</code> (SHA-256 of all source files combined), <code>total_files</code>, <code>total_metrics</code>, <code>status</code> (<code>processed</code>/<code>error</code>)</td>
+    </tr>
+    <tr>
+      <td><code>prom_snapshot_files</code></td>
+      <td>One row per individual <code>.prom</code> file within a run</td>
+      <td><code>filename</code>, <code>file_hash</code> (per-file SHA-256), <code>size_bytes</code>, <code>metric_count</code>, <code>generated_time</code>, <code>state_file</code> — indexed on <code>snapshot_id</code></td>
+    </tr>
+  </tbody>
+</table>
+<h3>How "comparison" actually works</h3>
+<p>Step-by-step, from <code>process_prom_file()</code> in <code>backend/services/prom_ingestor.py</code>:</p>
+<ol>
+  <li>Combined SHA-256 hash of every source <code>.prom</code> file's bytes is computed (<code>folder_hash</code>). If it matches the last <em>successful</em> snapshot's hash, the run exits immediately — nothing is written. This is the idempotency guard.</li>
+  <li>Otherwise, the most recent successful <code>PromSnapshot</code> is loaded, and every <code>alert_events</code> row from that snapshot that is still <em>active</em> (<code>category != resolved</code>) becomes the comparison set (<code>_previous_active_alerts</code>).</li>
+  <li>Each newly parsed alert is matched against that set by <code>fingerprint_exact</code> first, then <code>fingerprint_general</code> (<code>_find_previous_alert</code>) — exact match wins so a change in <code>caused_by</code> line number doesn't silently merge into a different issue.</li>
+  <li><code>growth = new count − matched previous count</code>; unmatched alerts are brand new (<code>previous_count = 0</code>).</li>
+  <li>Any previously-active alert with <strong>no</strong> match in the new snapshot is emitted as a synthetic <code>resolved</code> row (<code>_build_resolved_event</code>) — this only fires once per disappearance, not on every subsequent run, because resolved alerts are excluded from the next comparison set.</li>
+</ol>
+<div class="callout callout-danger">
+  <div class="callout-title">Comparison always looks back exactly one snapshot</div>
+  <p>
+    There is no multi-snapshot trend/rolling-window comparison — only "this run vs. the
+    single most recent successful run." Historical <code>prom_snapshots</code> rows before
+    that are pure archival record; nothing in the app queries them for comparison once a
+    newer snapshot exists.
+  </p>
+</div>
+
+<div class="page-break"></div>
+
+<h2 id="growth">9. Growth Rate &amp; Volume Projection</h2>
+<p>Assuming the documented cron/watcher cadence of <strong>every 10 minutes</strong> (144 runs/day):</p>
+<table>
+  <thead><tr><th>Table</th><th>Rows written per run</th><th>Rows/day (144 runs)</th><th>Notes</th></tr></thead>
+  <tbody>
+    <tr><td>alert_batches</td><td>1</td><td>144</td><td>Fixed, regardless of metric volume</td></tr>
+    <tr><td>prom_snapshots</td><td>1</td><td>144</td><td>Fixed</td></tr>
+    <tr><td>prom_snapshot_files</td><td>1 per source <code>.prom</code> file (H)</td><td>144 × H</td><td>H = number of monitored hosts</td></tr>
+    <tr><td><strong>alert_events</strong></td><td>1 per active metric line (M) + resolved rows (R)</td><td><strong>144 × (M + R)</strong></td><td>The dominant term — written in full every run, not incrementally</td></tr>
+    <tr><td>alert_notes</td><td>0–few (human-paced)</td><td>negligible</td><td>Not batch-driven</td></tr>
+    <tr><td>issue_status_history</td><td>0–few (human-paced)</td><td>negligible</td><td>Not batch-driven</td></tr>
+    <tr><td>known_issues</td><td>~0 (catalog, human-paced)</td><td>negligible</td><td>Bounded, low volume</td></tr>
+  </tbody>
+</table>
+<p>Worked example — plug in real production numbers for H and M once known:</p>
+<pre>H (hosts/files)     = 20
+M (active metrics)  = 100
+
+alert_events/day    = 144 × 100        =  14,400 rows/day
+alert_events/year   = 14,400 × 365     ≈  5,256,000 rows/year
+prom_snapshot_files  = 144 × 20        =   2,880 rows/day  ≈  1,051,200 rows/year
+alert_batches + prom_snapshots         =     288 rows/day  ≈    105,120 rows/year combined</pre>
+<p>
+  SQLite handles millions of rows fine <em>for reads with proper indexes</em>, but at this
+  scale two things bite: (a) unindexed hot-path columns turn into full-table scans as the
+  table grows (§10), and (b) the <code>.db</code> file itself grows unbounded on disk
+  since nothing ever deletes old rows (§11).
+</p>
+
+<h2 id="offloading">10. Current Offloading Status</h2>
+<div class="callout callout-done">
+  <div class="callout-title"><span class="badge-done">Implemented</span>A retention/offload job now runs on a daily cadence, separate from the 10-minute ingest cycle.</div>
+  <p>
+    <code>backend/cron_cleanup.py</code> (invoked via <code>python3 -m backend.cron_cleanup</code>,
+    intended for a daily cron entry) exports and deletes <code>alert_events</code> rows —
+    plus their <code>alert_notes</code> and <code>issue_status_history</code> children —
+    older than <code>SCANFOR_RETENTION_DAYS</code> (default 90). A row is only ever offloaded
+    if it also has no open ticket and isn't tied to an active (non-archived) Known Issue,
+    and the single most recent successful snapshot is always protected regardless of age,
+    since <code>prom_ingestor.py</code> depends on it for the next growth comparison (§8).
+    Every deleted row is written to CSV in <code>SCANFOR_EXPORT_DIR</code> first. Orphaned
+    <code>alert_batches</code> / <code>prom_snapshots</code> / <code>prom_snapshot_files</code>
+    (zero remaining <code>alert_events</code>) are cleaned up in the same pass, and
+    <code>VACUUM</code> runs at the end to actually reclaim disk space. A manual trigger is
+    also available: <code>POST /api/retention/run</code>, <code>GET /api/retention/status</code>.
+  </p>
+  <p>
+    <strong>Tested</strong> against a throwaway copy of the production-shaped local database
+    with all rows backdated 200 days: 620 of 737 <code>alert_events</code> rows were
+    correctly offloaded, 117 were correctly protected, 3 orphaned batches/snapshots and 54
+    orphaned snapshot files were cleaned up, exports were written with matching row counts,
+    the <code>known_issues</code> catalog was untouched, and the <code>.db</code> file shrank
+    from 892&nbsp;KB to 282&nbsp;KB after <code>VACUUM</code>.
+  </p>
+</div>
+<h3>Related scaling risk: missing indexes on hot-path columns — fixed</h3>
+<p>SQLAlchemy only indexes a column when <code>index=True</code> is explicitly set. These frequently-filtered columns were previously <strong>not</strong> indexed:</p>
+<table>
+  <thead><tr><th>Column</th><th>Used by</th><th>Risk as table grows</th></tr></thead>
+  <tbody>
+    <tr><td><code>alert_events.snapshot_id</code></td><td><code>_previous_active_alerts()</code> — runs on <em>every ingestion</em></td><td>Full table scan every 10 minutes</td></tr>
+    <tr><td><code>alert_events.batch_id</code></td><td><code>GET /api/alerts</code> — runs on <em>every dashboard load</em></td><td>Full table scan on every page load/refresh</td></tr>
+    <tr><td><code>alert_notes.alert_event_id</code></td><td>Note history lookups</td><td>Scan grows with total notes ever written</td></tr>
+    <tr><td><code>issue_status_history.alert_event_id</code></td><td>Audit trail lookups</td><td>Scan grows with total status changes ever made</td></tr>
+  </tbody>
+</table>
+<div class="callout callout-done">
+  <div class="callout-title"><span class="badge-done">Implemented</span><code>index=True</code> added to all four columns</div>
+  <p>
+    Since this project has no migration tool (no Alembic — confirmed, not in
+    <code>requirements.txt</code>), <code>Base.metadata.create_all()</code> alone would not
+    have retroactively indexed these columns on an already-existing database. Added
+    <code>ensure_indexes()</code> in <code>backend/database/db.py</code> — idempotent
+    <code>CREATE INDEX IF NOT EXISTS</code> DDL run at startup by both the web server
+    (<code>main.py</code>) and the standalone ingest/cleanup scripts. Verified against the
+    existing local <code>.db</code> file: all four indexes are present without a reset.
+  </p>
+</div>
+
+<h2 id="recommendations">11. Prioritized Recommendations</h2>
+<p>
+  Items 1–5 below have been implemented and verified (marked <span class="badge-done">Implemented</span>).
+  Item 6 is still a future trigger condition only, not something built.
+</p>
+
+<h3><span class="prio prio-now">Now</span>Cheap, safe, no data-loss risk</h3>
+
+<div class="rec-item">
+  <div class="rec-head"><span class="badge-done">Implemented</span>1. Add the missing indexes</div>
+  <div class="rec-meta">Effort: small · Risk: none · Unlocks: faster ingestion + faster dashboard loads immediately</div>
+  <p>
+    <code>index=True</code> added in <code>backend/database/models.py</code> to
+    <code>alert_events.snapshot_id</code>, <code>alert_events.batch_id</code>,
+    <code>alert_notes.alert_event_id</code>, and <code>issue_status_history.alert_event_id</code>.
+  </p>
+  <div class="callout callout-done" style="margin:6px 0 0">
+    <div class="callout-title">Gotcha handled: this project has no migration tool</div>
+    <p>
+      No Alembic (confirmed — not in <code>requirements.txt</code>, no <code>alembic/</code>
+      directory), so <code>Base.metadata.create_all()</code> alone would not have
+      retroactively indexed these columns on a database that already existed. Added
+      <code>ensure_indexes()</code> (idempotent <code>CREATE INDEX IF NOT EXISTS</code> DDL)
+      in <code>backend/database/db.py</code>, run at startup by both the web server and the
+      standalone ingest/cleanup scripts — verified against the existing local <code>.db</code>
+      without needing a reset.
+    </p>
+  </div>
+</div>
+
+<div class="rec-item">
+  <div class="rec-head"><span class="badge-done">Implemented</span>2. Fix the ticket_link and Known-Issue precedence gaps</div>
+  <div class="rec-meta">Effort: small · Risk: none · See §5 and §6 callouts above for detail</div>
+  <p>
+    <code>known_issue.ticket_link</code> now auto-copies onto a newly-linked alert when the
+    alert has none of its own; explicit specificity precedence now applies when multiple
+    active Known Issues could match the same fingerprint.
+  </p>
+</div>
+
+<div class="rec-item">
+  <div class="rec-head"><span class="badge-done">Implemented</span>3. Add a DB-size / row-count health check</div>
+  <div class="rec-meta">Effort: small · Risk: none · Gives visibility before overload becomes an incident</div>
+  <p>
+    <code>GET /api/health</code> now reports <code>alert_events_row_count</code> and
+    <code>db_size_bytes</code> alongside the existing status fields — verified live
+    (<code>alert_events_row_count: 737, db_size_bytes: 892928</code> against the local dev DB).
+  </p>
+</div>
+
+<h3><span class="prio prio-next">Next</span>Requires a design decision, moderate effort</h3>
+
+<div class="rec-item">
+  <div class="rec-head"><span class="badge-done">Implemented</span>4. Retention/offload job, parallel to <code>cron_ingest.py</code></div>
+  <div class="rec-meta">Effort: medium · Risk: low, export-before-delete · Retention window: 90 days (owner-approved)</div>
+  <p>
+    <code>backend/cron_cleanup.py</code>, meant for a daily cron entry (not every 10 min):
+  </p>
+  <ol>
+    <li>Selects <code>alert_events</code> rows older than <code>SCANFOR_RETENTION_DAYS</code> (default 90) AND not tied to an active Known Issue (<code>known_issue_id IS NULL</code> or the linked issue is archived) AND with no open ticket (<code>ticket_link IS NULL</code>)</li>
+    <li>Exports the selected rows to CSV before deleting (see item 5)</li>
+    <li>Bulk-deletes matching <code>alert_notes</code> and <code>issue_status_history</code> rows first, then the <code>alert_events</code> rows themselves</li>
+    <li>Deletes orphaned <code>alert_batches</code> / <code>prom_snapshots</code> / <code>prom_snapshot_files</code> rows once no <code>alert_events</code> reference them — <strong>except</strong> the single most recent successful snapshot, always kept since §8 depends on it for the next comparison</li>
+    <li>Runs <code>VACUUM</code> at the end, on a separate connection outside the retention transaction (SQLite can't <code>VACUUM</code> inside an open transaction)</li>
+  </ol>
+  <p>
+    A manual trigger also exists: <code>POST /api/retention/run</code>,
+    <code>GET /api/retention/status</code>.
+  </p>
+  <div class="callout callout-done" style="margin:6px 0 0">
+    <div class="callout-title">Verified against a throwaway DB copy</div>
+    <p>
+      All 737 local <code>alert_events</code> rows were backdated 200 days on a copy of the
+      database (never the real one) and the job run against it: 620 rows correctly
+      offloaded, 117 correctly protected, 3 orphaned batches + 3 orphaned snapshots + 54
+      orphaned snapshot files cleaned up, exports written with matching row counts,
+      <code>known_issues</code> left untouched, and the file shrank from 892&nbsp;KB to
+      282&nbsp;KB after <code>VACUUM</code>. A live run against the real (untouched) local DB
+      correctly returned <code>no-op</code>, since nothing there is actually 90+ days old yet.
+    </p>
+  </div>
+</div>
+
+<div class="rec-item">
+  <div class="rec-head"><span class="badge-done">Implemented</span>5. Export-before-delete to cold storage</div>
+  <div class="rec-meta">Effort: medium · Risk: none, purely additive · Pairs with item 4</div>
+  <p>
+    CSV chosen over Parquet — no new dependency required (<code>csv</code> is stdlib) versus
+    Parquet's <code>pyarrow</code>/<code>pandas</code> addition. Exports land in
+    <code>SCANFOR_EXPORT_DIR</code> (default: an <code>exports/</code> folder next to the
+    database file, so a Docker deployment's exports live on the same persisted volume as the
+    DB) as three dated files per run — <code>*_alert_events.csv</code>,
+    <code>*_alert_notes.csv</code>, <code>*_issue_status_history.csv</code>.
+  </p>
+</div>
+
+<h3><span class="prio prio-later">Later</span>Only if volume actually outgrows SQLite</h3>
+
+<div class="rec-item">
+  <div class="rec-head">6. Migrate history tables to Postgres</div>
+  <div class="rec-meta">Effort: large · Risk: medium · Trigger condition, not a default plan</div>
+  <p>
+    SQLite's single-writer lock is the real ceiling here — cron writing every 10 minutes
+    while the dashboard reads concurrently is already flagged as a risk in the project's
+    own docs (<code>database is locked</code> troubleshooting entry, Appendix A). If the
+    <code>.db</code> file reaches multi-GB size, or lock contention starts showing up in
+    logs, that's the trigger to move <code>alert_events</code>/<code>prom_snapshots</code>
+    history to Postgres — already anticipated in the Phase 3 docs. Don't do this
+    preemptively; it's a real infrastructure lift for a problem the current scale likely
+    doesn't have yet.
+  </p>
+</div>
+
+<h2 id="quickref">12. Quick Reference Table</h2>
+<table>
+  <thead><tr><th>Metric</th><th>Storage</th><th>File type</th><th>Written by</th><th>Growth pace</th><th>Offloading today</th></tr></thead>
+  <tbody>
+    <tr><td>Alert events (count/growth)</td><td><code>alert_events</code> table</td><td>SQLite row</td><td><code>prom_ingestor.py</code>, every ingest</td><td>Fast — per metric, per run</td><td>Yes — <code>cron_cleanup.py</code>, 90-day window, export-before-delete (§11)</td></tr>
+    <tr><td>Alert batches</td><td><code>alert_batches</code> table</td><td>SQLite row</td><td><code>prom_ingestor.py</code>, every ingest</td><td>Fixed, per run</td><td>Yes — deleted once orphaned (zero remaining alert_events), latest always protected</td></tr>
+    <tr><td>Notes</td><td><code>alert_events.notes</code> + <code>alert_notes</code> table</td><td>SQLite row(s)</td><td>POST /alerts/{id}/notes</td><td>Human-paced</td><td>Yes — offloaded alongside their parent alert_events row</td></tr>
+    <tr><td>Tickets</td><td><code>alert_events.ticket_link</code>, <code>known_issues.ticket_link</code></td><td>SQLite column (URL/ID string)</td><td>PATCH /alerts/{id}/ticket, known-issue CRUD</td><td>Human-paced (UPDATE, not INSERT)</td><td>N/A — no growth; a row with an open ticket is also exempt from retention (§11)</td></tr>
+    <tr><td>Marked known / Known Issues</td><td><code>known_issues</code> table</td><td>SQLite row</td><td>POST /alerts/{id}/mark-known, known-issue CRUD</td><td>Slow — catalog-sized</td><td>Status flag only (archived), never deleted or touched by retention</td></tr>
+    <tr><td>Status change history</td><td><code>issue_status_history</code> table</td><td>SQLite row</td><td>PATCH /alerts/{id}/status, mark-known</td><td>Human-paced</td><td>Yes — offloaded alongside their parent alert_events row</td></tr>
+    <tr><td>Snapshots (comparison basis)</td><td><code>prom_snapshots</code> table</td><td>SQLite row</td><td><code>prom_ingestor.py</code>, every ingest</td><td>Fixed, per run</td><td>Yes, once orphaned — but the single latest snapshot is never deleted, since comparison always needs it</td></tr>
+    <tr><td>Snapshot files (per-host detail)</td><td><code>prom_snapshot_files</code> table</td><td>SQLite row</td><td><code>prom_ingestor.py</code>, every ingest</td><td>Fast — per host, per run</td><td>Yes — deleted along with their orphaned parent snapshot</td></tr>
+    <tr><td>Raw source metrics</td><td>filesystem</td><td><code>.prom</code> text files</td><td>External Scanfor tool (not this app)</td><td>Overwritten in place, not appended</td><td>N/A — read-only, not owned by this app</td></tr>
+    <tr><td>Database file itself</td><td>filesystem / Docker volume</td><td><code>.db</code> (SQLite)</td><td>SQLAlchemy engine</td><td>Bounded by the 90-day retention window instead of growing forever</td><td>Yes — <code>VACUUM</code> runs at the end of every <code>cron_cleanup.py</code> run</td></tr>
+  </tbody>
+</table>
+
+<footer>
+  Generated from the current backend source (models.py, prom_ingestor.py, routes/*.py, classifier.py). Re-generate after any schema or ingestion-logic change.
+</footer>
+
+</body>
+</html>

@@ -397,6 +397,44 @@ a:hover { text-decoration: underline; }
 }
 .filter-select:focus { border-color: var(--blue); }
 
+.filter-group-checks { gap: 12px; }
+.filter-check {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.filter-check input { cursor: pointer; }
+
+/* ─── Trend badge (used in the "Details" expand panel) ──────────────────────── */
+.trend-badge {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+.trend-new { background: var(--blue-dim); color: var(--blue); }
+.trend-spike { background: var(--orange-dim); color: var(--orange); }
+.trend-worsening_rapidly { background: var(--red-dim); color: var(--red); }
+.trend-worsening_steadily { background: rgba(240, 144, 30, 0.18); color: var(--orange); }
+.trend-slow_growth { background: rgba(240, 144, 30, 0.10); color: var(--orange); }
+.trend-accelerating { background: var(--red-dim); color: var(--red); }
+.trend-persistent { background: rgba(240, 144, 30, 0.18); color: var(--orange); }
+.trend-stable { background: rgba(90, 96, 122, 0.2); color: var(--gray); }
+.trend-cooling { background: rgba(56, 192, 122, 0.12); color: var(--green); }
+.trend-improving { background: rgba(56, 192, 122, 0.18); color: var(--green); }
+.trend-resolving { background: rgba(56, 192, 122, 0.18); color: var(--green); }
+.trend-flapping { background: rgba(155, 108, 240, 0.2); color: var(--purple); }
+.trend-resolved { background: var(--green-dim); color: var(--green); }
+.trend-insufficient_history { background: rgba(90, 96, 122, 0.2); color: var(--gray); }
+.trend-data_unavailable { background: rgba(90, 96, 122, 0.32); color: var(--text-secondary); }
+
 /* ─── Section Panels ────────────────────────────────────────────────────────── */
 .section-panel {
   background: var(--bg-panel);
@@ -429,13 +467,29 @@ a:hover { text-decoration: underline; }
 .section-known .section-header { border-left: 3px solid var(--blue); }
 .section-worsening .section-header { border-left: 3px solid var(--orange); }
 .section-resolved .section-header { border-left: 3px solid var(--green); }
+.section-suppressed .section-header,
+.section-noise .section-header { border-left: 3px solid var(--gray); }
 
 .count-new { background: var(--red-dim); color: var(--red); }
 .count-known { background: var(--blue-dim); color: var(--blue); }
 .count-worsening { background: var(--orange-dim); color: var(--orange); }
 .count-resolved { background: var(--green-dim); color: var(--green); }
+.count-suppressed, .count-noise { background: rgba(90, 96, 122, 0.25); color: var(--gray); }
 
 .section-desc { font-size: 12px; color: var(--text-muted); margin-left: auto; }
+
+/* ─── Muted (Suppressed / Noise) audit sections ────────────────────────────────
+   Retained data, de-emphasized display — collapsed by default, muted colors,
+   but text stays legible (text-secondary, not a low-contrast dim). */
+.section-muted { opacity: 0.92; }
+.section-muted .section-header { cursor: pointer; }
+.section-muted .section-title { color: var(--text-secondary); }
+.alert-row-muted td { color: var(--text-secondary); }
+.status-suppressed, .status-noise {
+  background: rgba(90, 96, 122, 0.18);
+  color: var(--gray);
+  border: 1px solid rgba(90, 96, 122, 0.35);
+}
 
 /* ─── Tables ────────────────────────────────────────────────────────────────── */
 .table-scroll { overflow-x: auto; }
